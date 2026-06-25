@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 class PageTitle extends StatelessWidget {
-  const PageTitle({super.key, required this.title});
+  const PageTitle({super.key, required this.title, this.icon = Icons.dashboard});
 
   final String title;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +15,7 @@ class PageTitle extends StatelessWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset('assets/icons/dashboard.png', width: 22, height: 22),
+            Icon(icon, size: 22,),
             const SizedBox(width: 8),
             Text(
               title,

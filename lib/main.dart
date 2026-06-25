@@ -1,5 +1,6 @@
 import 'package:first_flutter_project/components/pageTitle/pageTitle.dart';
 import 'package:first_flutter_project/pages/homepage/home_page.dart';
+import 'package:first_flutter_project/pages/stockpage/stock_page.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -24,7 +25,7 @@ class MainLayoutShell extends StatefulWidget {
   const MainLayoutShell({super.key});
 
   @override
-  State<MainLayoutShell> createState() => _MainLayoutShellState();
+  State<MainLayoutShell> createState() => _MainLayoutShellState(); // key in creating state
 }
 
 class _MainLayoutShellState extends State<MainLayoutShell> {
@@ -33,6 +34,7 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
 
   // List of page titles that match each tab index
   final List<String> _titles = ['Dashboard', 'Stock', 'Pos', 'Credit', 'Calc', 'More'];
+  final List<IconData> icons = [Icons.dashboard, Icons.inventory_2, Icons.point_of_sale, Icons.credit_card, Icons.calculate,Icons.more];
 
   // List of actual body widgets for each tab index
   late final List<Widget> _pages;
@@ -43,7 +45,7 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
     // Initialize your pages array (added placeholder containers for demo)
     _pages = [
       const MyHomePage(), // Your existing homepage component
-      const Center(child: Text('Stock Page')),
+      const StockPage(), // stock page
       const Center(child: Text('Pos Page')),
       const Center(child: Text('Credit Page')),
       const Center(child: Text('Calc Page')),
@@ -67,12 +69,13 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
         toolbarHeight: 80,
         centerTitle: false,
         // Dynamically changes the title bar text string using the current index state variable
-        title: PageTitle(title: _titles[_currentIndex]),
+        title: PageTitle(title: _titles[_currentIndex], icon: icons[_currentIndex],),
         actions: [
           IconButton(
             onPressed: () {},
             icon: const Icon(Icons.notifications_none),
           ),
+          IconButton(onPressed: () {}, icon: const Icon(Icons.supervised_user_circle))
         ],
       ),
       // Displays the correct active page body view configuration
@@ -89,32 +92,32 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard_outlined),
-            activeIcon: Icon(Icons.dashboard),
+            activeIcon: Icon(Icons.dashboard, color: Colors.black,),
             label: 'Dashboard',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.inventory_2_outlined),
             label: 'Stock',
-            activeIcon: Icon(Icons.inventory_2)
+            activeIcon: Icon(Icons.inventory_2, color: Colors.black,)
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.point_of_sale_outlined),
-            activeIcon: Icon(Icons.point_of_sale),
+            activeIcon: Icon(Icons.point_of_sale, color: Colors.black),
             label: 'Pos',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.credit_card_outlined),
-            activeIcon: Icon(Icons.credit_card),
+            activeIcon: Icon(Icons.credit_card, color: Colors.black),
             label: 'Credit',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.calculate_outlined),
-            activeIcon: Icon(Icons.calculate),
+            activeIcon: Icon(Icons.calculate, color: Colors.black,),
             label: 'Calc',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.more_horiz_outlined),
-            activeIcon: Icon(Icons.more_horiz),
+            activeIcon: Icon(Icons.more_horiz, color: Colors.black,),
             label: 'More',
           )
         ],

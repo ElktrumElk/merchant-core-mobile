@@ -71,7 +71,7 @@ class HomeStatistics extends StatelessWidget {
     );
   }
 
-  Widget _buildStatCard({
+  Widget  _buildStatCard({
     String title = 'untitled',
     String value = '',
     Color color = Colors.black,
