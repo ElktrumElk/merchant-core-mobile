@@ -1,5 +1,6 @@
 import 'package:first_flutter_project/components/pageTitle/pageTitle.dart';
 import 'package:first_flutter_project/pages/homepage/home_page.dart';
+import 'package:first_flutter_project/pages/pos/pos_page.dart';
 import 'package:first_flutter_project/pages/stockpage/stock_page.dart';
 import 'package:flutter/material.dart';
 
@@ -46,7 +47,7 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
     _pages = [
       const MyHomePage(), // Your existing homepage component
       const StockPage(), // stock page
-      const Center(child: Text('Pos Page')),
+      const PosPage(),
       const Center(child: Text('Credit Page')),
       const Center(child: Text('Calc Page')),
       const Center(child: Text('More Page')),
@@ -77,6 +78,7 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
           ),
           IconButton(onPressed: () {}, icon: const Icon(Icons.supervised_user_circle))
         ],
+
       ),
       // Displays the correct active page body view configuration
       body: _pages[_currentIndex],

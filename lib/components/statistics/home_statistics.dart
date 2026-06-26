@@ -1,7 +1,19 @@
+import 'package:first_flutter_project/pages/stockpage/stock_page.dart';
 import 'package:flutter/material.dart';
 
-class HomeStatistics extends StatelessWidget {
+class HomeStatistics extends StatefulWidget {
   const HomeStatistics({super.key});
+
+  @override
+  State<HomeStatistics> createState() => _HomeStatisticsState();
+
+}
+
+class _HomeStatisticsState extends State<HomeStatistics> {
+  double totalRevenue = 0.00;
+  int orders = 0;
+  double inventory = TotalInventoryValue().getInventoryValue();
+  int creditOutstanding = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -15,9 +27,9 @@ class HomeStatistics extends StatelessWidget {
               Expanded(
                 child: _buildStatCard(
                   title: 'TOTAL REVENU',
-                  value: 'NLE 0.00',
+                  value: 'NLE ${totalRevenue.toStringAsFixed(2)}',
                   color: Colors.black,
-                  info: 'NLE0.00 this month',
+                  info: 'NLE${totalRevenue.toStringAsFixed(2)} this month',
                   infoColor: Colors.green,
                   iconUrl: 'assets/icons/dollar.png',
                   iconColor: Colors.grey
@@ -27,9 +39,9 @@ class HomeStatistics extends StatelessWidget {
               Expanded(
                 child: _buildStatCard(
                   title: 'ORDERS',
-                  value: '0',
+                  value: orders.toString(),
                   color: Colors.black,
-                  info: '0 active customers',
+                  info: '${orders.toString()} active customers',
                   infoColor: Colors.grey,
                     iconUrl: 'assets/icons/increase.png',
                     iconColor: Colors.grey
@@ -44,7 +56,7 @@ class HomeStatistics extends StatelessWidget {
               Expanded(
                 child: _buildStatCard(
                   title: 'INVENTORY',
-                  value: 'NLE 0.00',
+                  value: 'NLE ${inventory.toStringAsFixed(2)}',
                   color: Colors.black,
                   info: '0 Products',
                   infoColor: Colors.grey,
@@ -56,9 +68,9 @@ class HomeStatistics extends StatelessWidget {
               Expanded(
                 child: _buildStatCard(
                   title: 'CREDIT OUTSTANDING',
-                  value: '0',
+                  value: creditOutstanding.toString(),
                   color: Colors.yellow.shade700,
-                  info: '0 low stock alert',
+                  info: '${creditOutstanding.toString()} low stock alert',
                   infoColor: Colors.grey,
                     iconUrl: 'assets/icons/alert.png',
                     iconColor: Colors.yellow.shade700

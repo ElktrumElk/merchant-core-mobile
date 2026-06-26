@@ -1,70 +1,203 @@
+import 'dart:ffi';
+
 import 'package:first_flutter_project/components/greetingCard/greeting_card.dart';
 import 'package:first_flutter_project/pages/stockpage/stock_statistics.dart';
 import 'package:flutter/material.dart';
 
-class Product {
-  final int id;
-  final String name;
-  final double price;
-  final int quantity;
-  final bool inStock;
+class TotalInventoryValue {
+  static double sharedInventoryValue = 0.00;
 
-  const Product({
+  void setInventoryValue(double value) {
+    sharedInventoryValue = value;
+  }
+
+  double getInventoryValue() {
+    return sharedInventoryValue;
+  }
+}
+
+// share items added on the stock page ================================
+class GlobalItems {
+  static List<Product> lists = [];
+
+  void setList(List<Product> list) {
+    lists = list;
+  }
+
+  List<Product> getLists () {
+    return lists;
+  }
+}
+// ================================================
+
+// Required class to add items=====================
+class Product {
+  int id;
+   String name;
+   double price;
+   int quantity;
+   bool inStock;
+
+   Product({
     required this.id,
     required this.name,
     required this.price,
     required this.quantity,
     required this.inStock,
   });
-}
 
-class StockPage extends StatelessWidget {
+}
+//=========================================================
+
+// Main Widget
+class StockPage extends StatefulWidget {
   const StockPage({super.key});
 
-  final List<Product> items = const [
-    Product(id: 1, name: 'Milk', price: 3.00, quantity: 60, inStock: true),
-    Product(id: 2, name: 'Gari', price: 2.00, quantity: 12, inStock: true),
-    Product(id: 3, name: 'Sugar', price: 2.00, quantity: 30, inStock: true),
-    Product(id: 4, name: 'Bread', price: 5.00, quantity: 10, inStock: true),
+  @override
+  State<StockPage> createState() => _StockPageState();
+}
+
+class _StockPageState extends State<StockPage> {
+  List<Product> items = [
+     Product(
+      id: 1,
+      name: 'Milk',
+      price: 3.00,
+      quantity: 5,
+      inStock: true,
+    ),
+    Product(
+      id: 2,
+      name: 'Gari',
+      price: 2.00,
+      quantity: 12,
+      inStock: true,
+    ),
+    Product(
+      id: 3,
+      name: 'Sugar',
+      price: 2.00,
+      quantity: 30,
+      inStock: true,
+    ),
+    Product(
+      id: 4,
+      name: 'Bread',
+      price: 5.00,
+      quantity: 10,
+      inStock: true,
+    ),
   ];
+
+  void _addItem(String name, int quantity, double price) {
+    setState(() {
+      items.add(
+        Product(
+          id: items.length,
+          name: name,
+          price: price,
+          quantity: quantity,
+          inStock: true,
+        ),
+      );
+    });
+  }
+
+  void _deleteItem(int id) {
+    setState(() {
+      items.removeWhere((item) => item.id == id);
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Item deleted'),
+        duration: Duration(seconds: 1),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    // Calculate statistics dynamically
+    int totalItems = items.length;
+    int outOfStock = items
+        .where((item) => !item.inStock || item.quantity <= 0)
+        .length;
+    int lowStock = items
+        .where((item) => item.quantity > 0 && item.quantity < 15)
+        .length;
+    double totalValue = items.fold(
+      0,
+      (sum, item) => sum + (item.price * item.quantity),
+    );
+    TotalInventoryValue().setInventoryValue(totalValue);
+    GlobalItems().setList(items);
+
+
     return ListView(
       children: [
+
         const GreetingCard(
           title: 'Stocks',
           message: 'Here is what happening on stocks',
         ),
-        const StockStatistics(),
+
+        // Statistics card===============================
+        StockStatistics(
+          totalItems: totalItems,
+          lowStock: lowStock,
+          totalValue: totalValue,
+          outOfStock: outOfStock,
+        ),
+
+        //=============================================
         const SizedBox(height: 10),
 
+        //Search===========================================
         Container(
-          margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 1),
           padding: const EdgeInsets.all(10),
-          height: 40,
+
           decoration: const BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.all(Radius.circular(10)),
           ),
-          child: const TextField(
-            style: TextStyle(fontSize: 16),
-            decoration: InputDecoration(
-              fillColor: Colors.white,
-              border: InputBorder.none,
-              hintText: 'Search stock...', // Added context helper text
-            ),
+
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: const SearchBar(
+                  keyboardType: TextInputType.text,
+                  hintText: 'Milk: ',
+                  leading: Icon(Icons.search),
+                ),
+              ),
+
+              IconButton(onPressed: () {}, icon: Icon(Icons.add), iconSize: 30),
+            ],
           ),
         ),
+
+
+        //=======================================
         const SizedBox(height: 10),
 
-        // Items cards loop
-        ListView.builder(
-          itemCount: items.length,
-          shrinkWrap: true, // Crucial fix: must be true inside another ListView
-          physics: const NeverScrollableScrollPhysics(),
-          itemBuilder: (context, index) {
-            final product = items[index]; // Fetching current loop item
+        // Items cards loop==============================================
+        if (items.isEmpty)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(20.0),
+              child: Text('No products available.'),
+            ),
+          )
+        else
+          ListView.builder(
+            itemCount: items.length,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemBuilder: (context, index) {
+            final product = items[index];
 
             return Container(
               padding: const EdgeInsets.all(10),
@@ -75,7 +208,7 @@ class StockPage extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: const BoxDecoration(
-                      color: Color(0xFFF5F5F5), // Crucial fix: valid hex color
+                      color: Color(0xFFF5F5F5),
                       borderRadius: BorderRadius.all(Radius.circular(10)),
                     ),
                     child: Row(
@@ -88,12 +221,16 @@ class StockPage extends StatelessWidget {
                               height: 50,
                               padding: const EdgeInsets.all(10),
                               decoration: const BoxDecoration(
-                                borderRadius: BorderRadius.all(Radius.circular(10)),
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(10),
+                                ),
                                 color: Colors.white,
                               ),
                               child: Center(
                                 child: Text(
-                                  product.name.isNotEmpty ? product.name[0] : '?', // Gets first letter dynamically
+                                  product.name.isNotEmpty
+                                      ? product.name[0]
+                                      : '?',
                                   style: const TextStyle(
                                     color: Colors.grey,
                                     fontSize: 20,
@@ -109,17 +246,22 @@ class StockPage extends StatelessWidget {
                                   spacing: 20,
                                   children: [
                                     Text(
-                                      product.name, // Dynamic product name
+                                      product.name,
                                       style: const TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 5,
+                                        vertical: 2,
+                                      ),
                                       decoration: BoxDecoration(
                                         border: Border.all(
-                                          color: product.inStock ? Colors.green : Colors.red,
+                                          color: product.inStock
+                                              ? Colors.green
+                                              : Colors.red,
                                         ),
                                         color: product.inStock
                                             ? Colors.green.withAlpha(70)
@@ -127,18 +269,22 @@ class StockPage extends StatelessWidget {
                                         borderRadius: BorderRadius.circular(10),
                                       ),
                                       child: Text(
-                                        product.inStock ? 'In Stock' : 'Out of Stock', // Dynamic badge text
+                                        product.inStock
+                                            ? 'In Stock'
+                                            : 'Out of Stock',
                                         style: TextStyle(
                                           fontSize: 12,
-                                          color: product.inStock ? Colors.green[800] : Colors.red[800],
+                                          color: product.inStock
+                                              ? Colors.green[800]
+                                              : Colors.red[800],
                                         ),
                                       ),
-                                    )
+                                    ),
                                   ],
                                 ),
-                                Text('Total: ${product.quantity}') // Dynamic stock quantity tracking
+                                Text('Total: ${product.quantity}'),
                               ],
-                            )
+                            ),
                           ],
                         ),
                         Row(
@@ -149,11 +295,11 @@ class StockPage extends StatelessWidget {
                               icon: const Icon(Icons.edit),
                             ),
                             IconButton(
-                              onPressed: () {},
+                              onPressed: () => _deleteItem(product.id),
                               icon: const Icon(Icons.delete, color: Colors.red),
                             ),
                           ],
-                        )
+                        ),
                       ],
                     ),
                   ),
