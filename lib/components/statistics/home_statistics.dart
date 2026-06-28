@@ -21,6 +21,7 @@ class _HomeStatisticsState extends State<HomeStatistics> {
     StockGlobal().setGlobalItems();
     StockGlobal().setTotalInventoryValue();
     double inventory = TotalInventoryValue().getInventoryValue();
+    final theme = Theme.of(context);
 
     return Container(
       padding: const EdgeInsets.all(16.0),
@@ -31,9 +32,9 @@ class _HomeStatisticsState extends State<HomeStatistics> {
             children: [
               Expanded(
                 child: _buildStatCard(
-                  title: 'TOTAL REVENU',
+                  title: 'TOTAL REVENUE',
                   value: 'NLE ${totalRevenue.toStringAsFixed(2)}',
-                  color: Colors.black,
+                  color: theme.colorScheme.onSurface,
                   info: 'NLE${totalRevenue.toStringAsFixed(2)} this month',
                   infoColor: Colors.green,
                   iconUrl: 'assets/icons/dollar.png',
@@ -45,7 +46,7 @@ class _HomeStatisticsState extends State<HomeStatistics> {
                 child: _buildStatCard(
                   title: 'ORDERS',
                   value: orders.toString(),
-                  color: Colors.black,
+                  color: theme.colorScheme.onSurface,
                   info: '${orders.toString()} active customers',
                   infoColor: Colors.grey,
                     iconUrl: 'assets/icons/increase.png',
@@ -62,7 +63,7 @@ class _HomeStatisticsState extends State<HomeStatistics> {
                 child: _buildStatCard(
                   title: 'INVENTORY',
                   value: 'NLE ${inventory.toStringAsFixed(2)}',
-                  color: Colors.black,
+                  color: theme.colorScheme.onSurface,
                   info: '${GlobalItems.lists.length} Products',
                   infoColor: Colors.grey,
                     iconUrl: 'assets/icons/inventory.png',
@@ -74,11 +75,11 @@ class _HomeStatisticsState extends State<HomeStatistics> {
                 child: _buildStatCard(
                   title: 'CREDIT OUTSTANDING',
                   value: creditOutstanding.toString(),
-                  color: Colors.yellow.shade700,
+                  color: Colors.amber.shade700,
                   info: '${creditOutstanding.toString()} low stock alert',
                   infoColor: Colors.grey,
                     iconUrl: 'assets/icons/alert.png',
-                    iconColor: Colors.yellow.shade700
+                    iconColor: Colors.amber.shade700
                 ),
               ),
             ],
@@ -97,16 +98,19 @@ class _HomeStatisticsState extends State<HomeStatistics> {
     Color iconColor = Colors.black,
     String iconUrl = ''
   }) {
+    final theme = Theme.of(context);
     return Container(
       width: 150.0,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Color(0xFFEAEAEA), width: 1),
+        border: Border.all(color: theme.dividerColor, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withAlpha(90),
+            color: theme.brightness == Brightness.dark
+                ? Colors.black.withAlpha(130)
+                : Colors.grey.withAlpha(90),
             blurRadius: 2,
             offset: const Offset(0, 5),
           ),
@@ -121,12 +125,11 @@ class _HomeStatisticsState extends State<HomeStatistics> {
               Text(
                 title,
                 style: TextStyle(
-                  color: Colors.grey[600],
+                  color: theme.colorScheme.onSurface.withAlpha(180),
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
               ),
-
               Image.asset(
                iconUrl,
                 width: 20,
@@ -135,7 +138,6 @@ class _HomeStatisticsState extends State<HomeStatistics> {
               ),
             ],
           ),
-
           const SizedBox(height: 20),
           Text(
             value,

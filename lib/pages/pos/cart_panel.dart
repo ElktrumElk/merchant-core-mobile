@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart'; // Material components used for icons, buttons, and layouts
-import 'package:first_flutter_project/pages/stockpage/stock_page.dart'; // Your Product model import
+import 'package:flutter/material.dart';
+import 'package:first_flutter_project/pages/stockpage/stock_page.dart';
 
 class AddItemsToCart extends ChangeNotifier {
   static final AddItemsToCart _instance = AddItemsToCart._internal();
@@ -14,10 +14,8 @@ class AddItemsToCart extends ChangeNotifier {
     return _cartItems.fold(0, (sum, item) => sum + item.quantity);
   }
 
-  //  quick helper to calculate total monetary checkout value
   double get totalPrice {
     return _cartItems.fold(0.0, (sum, item) {
-      // Safely parse price string to double
       final double priceValue = item.product.price;
       return sum + (priceValue * item.quantity);
     });
@@ -27,7 +25,7 @@ class AddItemsToCart extends ChangeNotifier {
     if (product.quantity <= 0) return;
 
     final existingItemIndex = _cartItems.indexWhere(
-          (item) => item.product.id == product.id,
+      (item) => item.product.id == product.id,
     );
 
     if (existingItemIndex != -1) {
@@ -39,9 +37,10 @@ class AddItemsToCart extends ChangeNotifier {
     notifyListeners();
   }
 
-  // logic to decrement product volume or remove if it hits zero
   void removeProduct(Product product) {
-    final existingItemIndex = _cartItems.indexWhere((item) => item.product.id == product.id);
+    final existingItemIndex = _cartItems.indexWhere(
+      (item) => item.product.id == product.id,
+    );
     if (existingItemIndex != -1) {
       product.quantity++;
       if (_cartItems[existingItemIndex].quantity > 1) {
@@ -85,6 +84,8 @@ class _CartPanelState extends State<CartPanel> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return ListenableBuilder(
       listenable: cart,
@@ -96,20 +97,18 @@ class _CartPanelState extends State<CartPanel> {
           decoration: const BoxDecoration(
             color: Colors.transparent,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-
           ),
           padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
           height: 500,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. Dynamic Header with Item Counter
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     'Shopping Cart (${cart.totalItemCount})',
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
                   ),
                   if (cartList.isNotEmpty)
                     TextButton.icon(
@@ -121,61 +120,54 @@ class _CartPanelState extends State<CartPanel> {
                     )
                 ],
               ),
-              const Divider(height: 24),
-
-              // 2. Conditional Rendering: Empty State vs Scrollable Cart List
+              Divider(height: 24, color: theme.dividerColor),
               Expanded(
                 child: cartList.isEmpty
-                    ? const Center(
+                    ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.shopping_bag_outlined, size: 64, color: Colors.grey),
-                      SizedBox(height: 12),
-                      Text('Your cart is empty', style: TextStyle(color: Colors.grey, fontSize: 16)),
+                      Icon(Icons.shopping_bag_outlined, size: 64, color: theme.colorScheme.onSurface.withAlpha(100)),
+                      const SizedBox(height: 12),
+                      Text('Your cart is empty', style: TextStyle(color: theme.colorScheme.onSurface.withAlpha(150), fontSize: 16)),
                     ],
                   ),
                 )
                     : ListView.separated(
                   itemCount: cartList.length,
-                  separatorBuilder: (context, index) => const Divider(height: 16),
+                  separatorBuilder: (context, index) => Divider(height: 16, color: theme.dividerColor),
                   itemBuilder: (context, index) {
                     final item = cartList[index];
                     return Row(
                       children: [
-                        // Product Image Placeholder Block
                         Container(
                           width: 50,
                           height: 50,
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
+                            color: isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade100,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Icon(Icons.image, color: Colors.grey),
+                          child: Icon(Icons.image, color: theme.colorScheme.onSurface.withAlpha(100)),
                         ),
                         const SizedBox(width: 12),
-
-                        // Product Name & Total Row Item Calculation Display
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 item.product.name,
-                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: theme.colorScheme.onSurface),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 '\$${item.product.price}',
-                                style: const TextStyle(color: Colors.grey),
+                                style: TextStyle(color: theme.colorScheme.onSurface.withAlpha(150)),
                               ),
                             ],
                           ),
                         ),
-
-                        // Math Counter Action Buttons (Minus / Count / Plus)
                         Row(
                           children: [
                             IconButton(
@@ -186,10 +178,10 @@ class _CartPanelState extends State<CartPanel> {
                             ),
                             Text(
                               '${item.quantity}',
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.add_circle_outline, color: Colors.black),
+                              icon: Icon(Icons.add_circle_outline, color: theme.colorScheme.onSurface),
                               onPressed: () {
                                 cart.addProduct(item.product);
                               },
@@ -201,13 +193,11 @@ class _CartPanelState extends State<CartPanel> {
                   },
                 ),
               ),
-              const Divider(height: 24),
-
-              // 3. Absolute Bottom Calculation Summary Block
+              Divider(height: 24, color: theme.dividerColor),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Total Amount:', style: TextStyle(fontSize: 16, color: Colors.grey)),
+                  Text('Total Amount:', style: TextStyle(fontSize: 16, color: theme.colorScheme.onSurface.withAlpha(150))),
                   Text(
                     '\$${cart.totalPrice.toStringAsFixed(2)}',
                     style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.green),
@@ -215,13 +205,10 @@ class _CartPanelState extends State<CartPanel> {
                 ],
               ),
               const SizedBox(height: 16),
-
-              // 4. Checkout Action button
               SizedBox(
                 width: double.infinity,
                 height: 48,
                 child: FilledButton(
-
                   onPressed: cartList.isEmpty
                       ? null
                       : () {
@@ -229,7 +216,7 @@ class _CartPanelState extends State<CartPanel> {
                   },
                   style: FilledButton.styleFrom(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    backgroundColor: Colors.black
+                    backgroundColor: Colors.black,
                   ),
                   child: const Text('Proceed to Checkout', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),

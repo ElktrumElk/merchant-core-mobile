@@ -5,11 +5,11 @@ class Statistics extends StatelessWidget {
     super.key,
     required this.title,
     this.value,
-    this.color = Colors.black,
+    this.color,
     this.info = '',
-    this.iconColor = Colors.black,
+    this.iconColor,
     this.iconUrl = 'assets/icons/dollar.png',
-    this.infoColor = Colors.black,
+    this.infoColor,
     this.child,
   });
 
@@ -24,14 +24,14 @@ class Statistics extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Card(
-      elevation: 5,
-      color: Colors.white,
-      child: Padding(padding: const EdgeInsetsGeometry.all(10), child: Column(
+      elevation: 2,
+      color: theme.cardColor,
+      child: Padding(padding: const EdgeInsets.all(10), child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Header title and icon
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -39,29 +39,26 @@ class Statistics extends StatelessWidget {
                 child: Text(
                   title,
                   style: TextStyle(
-                    color: Colors.grey[600],
+                    color: theme.colorScheme.onSurface.withAlpha(180),
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
-
               Image.asset(
                 iconUrl as String,
                 width: 20,
                 height: 20,
-                color: iconColor,
+                color: iconColor ?? theme.colorScheme.onSurface.withAlpha(150),
               ),
             ],
           ),
           const SizedBox(height: 20),
-
           child ??
-              // Value
               Text(
                 value as String,
                 style: TextStyle(
-                  color: color,
+                  color: color ?? theme.colorScheme.onSurface,
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                 ),
@@ -70,14 +67,14 @@ class Statistics extends StatelessWidget {
           Text(
             info as String,
             style: TextStyle(
-              color: infoColor,
+              color: infoColor ?? theme.colorScheme.onSurface.withAlpha(150),
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
           ),
         ],
       ),
-      )
+      ),
     );
   }
 }

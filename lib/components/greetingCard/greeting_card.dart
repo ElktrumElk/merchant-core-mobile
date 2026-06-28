@@ -7,11 +7,18 @@ class GreetingCard extends StatelessWidget {
   final String message;
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(15),
       margin: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: const Color(0xFF03161C),
+        gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF1A2A3A), const Color(0xFF0D1B2A)]
+              : [const Color(0xFF03161C), const Color(0xFF0A2A35)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(15),
       ),
       child: Column(

@@ -1,5 +1,4 @@
-
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:first_flutter_project/components/statistics/statistics.dart';
 
 class StockStatistics extends StatelessWidget {

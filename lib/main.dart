@@ -1,5 +1,7 @@
 import 'package:first_flutter_project/components/pageTitle/pageTitle.dart';
 import 'package:first_flutter_project/components/settings/settings.dart';
+import 'package:first_flutter_project/global/app_theme.dart';
+import 'package:first_flutter_project/global/theme_notifier.dart';
 import 'package:first_flutter_project/pages/creditPage/credit_ledger.dart';
 import 'package:first_flutter_project/pages/homepage/home_page.dart';
 import 'package:first_flutter_project/pages/pos/pos_page.dart';
@@ -10,20 +12,22 @@ void main() {
   runApp(const MyApp());
 }
 
-// 1. Keep MyApp clean and Stateless
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      theme: ThemeData(
-        brightness: Brightness.light,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.white),
-      ),
-
-      debugShowCheckedModeBanner: false,
-      home: MainLayoutShell(), // Points to our new Stateful structural shell
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: themeNotifier,
+      builder: (context, themeMode, _) {
+        return MaterialApp(
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: themeMode,
+          debugShowCheckedModeBanner: false,
+          home: MainLayoutShell(),
+        );
+      },
     );
   }
 }
@@ -79,11 +83,9 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        shape: Border(bottom: BorderSide(color: Colors.grey.shade50, width: 1)),
+        shape: Border(bottom: BorderSide(color: Theme.of(context).dividerColor, width: 1)),
         toolbarHeight: 80,
         centerTitle: false,
-        // Dynamically changes the title bar text string using the current index state variable
         title: PageTitle(
           title: _titles[_currentIndex],
           icon: icons[_currentIndex],
@@ -105,9 +107,7 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
       body: _pages[_currentIndex],
 
       bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.white,
         currentIndex: _currentIndex,
-        type: BottomNavigationBarType.fixed,
         onTap: (int index) {
           setState(() {
             _currentIndex =
@@ -117,32 +117,32 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard_outlined),
-            activeIcon: Icon(Icons.dashboard, color: Colors.black),
+            activeIcon: Icon(Icons.dashboard),
             label: 'Dashboard',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.inventory_2_outlined),
             label: 'Stock',
-            activeIcon: Icon(Icons.inventory_2, color: Colors.black),
+            activeIcon: Icon(Icons.inventory_2),
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.point_of_sale_outlined),
-            activeIcon: Icon(Icons.point_of_sale, color: Colors.black),
+            activeIcon: Icon(Icons.point_of_sale),
             label: 'Pos',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.credit_card_outlined),
-            activeIcon: Icon(Icons.credit_card, color: Colors.black),
+            activeIcon: Icon(Icons.credit_card),
             label: 'Credit',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.calculate_outlined),
-            activeIcon: Icon(Icons.calculate, color: Colors.black),
+            activeIcon: Icon(Icons.calculate),
             label: 'Calc',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.more_horiz_outlined),
-            activeIcon: Icon(Icons.more_horiz, color: Colors.black),
+            activeIcon: Icon(Icons.more_horiz),
             label: 'More',
           ),
         ],
