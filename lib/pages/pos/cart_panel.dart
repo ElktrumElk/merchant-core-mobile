@@ -24,6 +24,8 @@ class AddItemsToCart extends ChangeNotifier {
   }
 
   void addProduct(Product product, {int quantity = 1}) {
+    if (product.quantity <= 0) return;
+
     final existingItemIndex = _cartItems.indexWhere(
           (item) => item.product.id == product.id,
     );
@@ -33,6 +35,7 @@ class AddItemsToCart extends ChangeNotifier {
     } else {
       _cartItems.add(CartItem(product: product, quantity: quantity));
     }
+    product.quantity -= quantity;
     notifyListeners();
   }
 
@@ -40,9 +43,9 @@ class AddItemsToCart extends ChangeNotifier {
   void removeProduct(Product product) {
     final existingItemIndex = _cartItems.indexWhere((item) => item.product.id == product.id);
     if (existingItemIndex != -1) {
+      product.quantity++;
       if (_cartItems[existingItemIndex].quantity > 1) {
         _cartItems[existingItemIndex].quantity--;
-
       } else {
         _cartItems.removeAt(existingItemIndex);
       }
@@ -51,6 +54,9 @@ class AddItemsToCart extends ChangeNotifier {
   }
 
   void clearCart() {
+    for (var item in _cartItems) {
+      item.product.quantity += item.quantity;
+    }
     _cartItems.clear();
     notifyListeners();
   }
@@ -86,12 +92,11 @@ class _CartPanelState extends State<CartPanel> {
         final cartList = cart.items;
 
         return Container(
+          margin: const EdgeInsets.all(10),
           decoration: const BoxDecoration(
-            color: Colors.white,
+            color: Colors.transparent,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            boxShadow: [
-              BoxShadow(color: Colors.black12, blurRadius: 10, spreadRadius: 2),
-            ],
+
           ),
           padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
           height: 500,
@@ -177,8 +182,6 @@ class _CartPanelState extends State<CartPanel> {
                               icon: const Icon(Icons.remove_circle_outline, color: Colors.grey),
                               onPressed: () {
                                 cart.removeProduct(item.product);
-                                itemData[index].quantity++;
-
                               },
                             ),
                             Text(
@@ -186,7 +189,7 @@ class _CartPanelState extends State<CartPanel> {
                               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.add_circle_outline, color: Colors.blue),
+                              icon: const Icon(Icons.add_circle_outline, color: Colors.black),
                               onPressed: () {
                                 cart.addProduct(item.product);
                               },
@@ -218,13 +221,15 @@ class _CartPanelState extends State<CartPanel> {
                 width: double.infinity,
                 height: 48,
                 child: FilledButton(
+
                   onPressed: cartList.isEmpty
-                      ? null // Button is automatically disabled if the cart is empty
+                      ? null
                       : () {
                     // Place your checkout processing logic here
                   },
                   style: FilledButton.styleFrom(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    backgroundColor: Colors.black
                   ),
                   child: const Text('Proceed to Checkout', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),

@@ -22,52 +22,39 @@ class _CardItemState extends State<CardItems> {
           shrinkWrap: true,
           padding: const EdgeInsets.all(10),
           physics: const NeverScrollableScrollPhysics(),
-          // Prevents nested scrolling conflicts
+
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2, // Forces exactly two columns
             crossAxisSpacing: 12.0, // Horizontal spacing between cards
             mainAxisSpacing: 12.0, // Vertical spacing between rows
-            childAspectRatio:
-                0.75, // Adjust this ratio to balance height vs width of the card
+            childAspectRatio: 1.5,
           ),
           itemBuilder: (context, index) {
             final product = itemsData[index];
 
             return Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-
+              color: Colors.white,
+              elevation: 5,
               child: Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.all(10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    // 1. Product Image / Placeholder Space
                     Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.grey[400],
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        width: double.infinity,
-                        child: const Icon(Icons.inventory, color: Colors.grey),
-                      ),
+                      child:
+                          // 2. Product Name / Title
+                          Text(
+                            product.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
                     ),
 
-                    const SizedBox(height: 8),
-
-                    // 2. Product Name / Title
-                    Text(
-                      product.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
                     const SizedBox(height: 4),
 
                     // 3. Product Price
@@ -78,7 +65,8 @@ class _CardItemState extends State<CardItems> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 8),
+
+                    const SizedBox(height: 10),
 
                     // 4. Action Button (Using your transparent styled button from earlier!)
                     SizedBox(
@@ -87,14 +75,11 @@ class _CardItemState extends State<CardItems> {
 
                       child: FilledButton(
                         onPressed: () {
-                          setState(() {
-                            if (product.quantity <= 0) {
-                              return;
-                            }
+                          if (product.quantity <= 0) {
+                            return;
+                          }
 
-                            AddItemsToCart().addProduct(product);
-                            product.quantity--;
-                          });
+                          AddItemsToCart().addProduct(product);
 
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(

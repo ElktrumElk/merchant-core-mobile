@@ -1,4 +1,6 @@
 import 'package:first_flutter_project/components/pageTitle/pageTitle.dart';
+import 'package:first_flutter_project/components/settings/settings.dart';
+import 'package:first_flutter_project/pages/creditPage/credit_ledger.dart';
 import 'package:first_flutter_project/pages/homepage/home_page.dart';
 import 'package:first_flutter_project/pages/pos/pos_page.dart';
 import 'package:first_flutter_project/pages/stockpage/stock_page.dart';
@@ -14,7 +16,12 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
+      theme: ThemeData(
+        brightness: Brightness.light,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.white),
+      ),
+
       debugShowCheckedModeBanner: false,
       home: MainLayoutShell(), // Points to our new Stateful structural shell
     );
@@ -34,8 +41,22 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
   int _currentIndex = 0;
 
   // List of page titles that match each tab index
-  final List<String> _titles = ['Dashboard', 'Stock', 'Pos', 'Credit', 'Calc', 'More'];
-  final List<IconData> icons = [Icons.dashboard, Icons.inventory_2, Icons.point_of_sale, Icons.credit_card, Icons.calculate,Icons.more];
+  final List<String> _titles = [
+    'Dashboard',
+    'Stock',
+    'Pos',
+    'Credit',
+    'Calc',
+    'More',
+  ];
+  final List<IconData> icons = [
+    Icons.dashboard,
+    Icons.inventory_2,
+    Icons.point_of_sale,
+    Icons.credit_card,
+    Icons.calculate,
+    Icons.more,
+  ];
 
   // List of actual body widgets for each tab index
   late final List<Widget> _pages;
@@ -48,59 +69,61 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
       const MyHomePage(), // Your existing homepage component
       const StockPage(), // stock page
       const PosPage(),
-      const Center(child: Text('Credit Page')),
+      const CreditLedger(),
       const Center(child: Text('Calc Page')),
       const Center(child: Text('More Page')),
-
     ];
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
       appBar: AppBar(
         backgroundColor: Colors.white,
-        shape: Border(
-          bottom: BorderSide(
-            color: Colors.grey.shade50,
-            width: 1,
-          ),
-        ),
+        shape: Border(bottom: BorderSide(color: Colors.grey.shade50, width: 1)),
         toolbarHeight: 80,
         centerTitle: false,
         // Dynamically changes the title bar text string using the current index state variable
-        title: PageTitle(title: _titles[_currentIndex], icon: icons[_currentIndex],),
+        title: PageTitle(
+          title: _titles[_currentIndex],
+          icon: icons[_currentIndex],
+        ),
         actions: [
           IconButton(
             onPressed: () {},
             icon: const Icon(Icons.notifications_none),
           ),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.supervised_user_circle))
+          IconButton(
+            onPressed: () {
+              SettingPanel().showSettingPanel(context);
+            },
+            icon: const Icon(Icons.settings),
+          ),
         ],
-
       ),
       // Displays the correct active page body view configuration
       body: _pages[_currentIndex],
 
       bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: Colors.white,
         currentIndex: _currentIndex,
         type: BottomNavigationBarType.fixed,
         onTap: (int index) {
           setState(() {
-            _currentIndex = index; // Re-renders the layout with the new tab index view state
+            _currentIndex =
+                index; // Re-renders the layout with the new tab index view state
           });
         },
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard_outlined),
-            activeIcon: Icon(Icons.dashboard, color: Colors.black,),
+            activeIcon: Icon(Icons.dashboard, color: Colors.black),
             label: 'Dashboard',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.inventory_2_outlined),
             label: 'Stock',
-            activeIcon: Icon(Icons.inventory_2, color: Colors.black,)
+            activeIcon: Icon(Icons.inventory_2, color: Colors.black),
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.point_of_sale_outlined),
@@ -114,14 +137,14 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.calculate_outlined),
-            activeIcon: Icon(Icons.calculate, color: Colors.black,),
+            activeIcon: Icon(Icons.calculate, color: Colors.black),
             label: 'Calc',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.more_horiz_outlined),
-            activeIcon: Icon(Icons.more_horiz, color: Colors.black,),
+            activeIcon: Icon(Icons.more_horiz, color: Colors.black),
             label: 'More',
-          )
+          ),
         ],
       ),
     );

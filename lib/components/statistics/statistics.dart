@@ -4,51 +4,45 @@ class Statistics extends StatelessWidget {
   const Statistics({
     super.key,
     required this.title,
-    required this.value,
+    this.value,
     this.color = Colors.black,
     this.info = '',
     this.iconColor = Colors.black,
     this.iconUrl = 'assets/icons/dollar.png',
     this.infoColor = Colors.black,
+    this.child,
   });
 
   final String title;
-  final String value;
+  final String? value;
   final Color? color;
   final String? info;
   final Color? infoColor;
   final Color? iconColor;
   final String? iconUrl;
+  final Widget? child;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 150.0,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Color(0xFFEAEAEA), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withAlpha(90),
-            blurRadius: 2,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
+    return Card(
+      elevation: 5,
+      color: Colors.white,
+      child: Padding(padding: const EdgeInsetsGeometry.all(10), child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
+          // Header title and icon
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                title,
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
 
@@ -60,17 +54,19 @@ class Statistics extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 20),
 
-          const SizedBox(height: 20),
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 20),
+          child ??
+              // Value
+              Text(
+                value as String,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+          if (info != '') const SizedBox(height: 20),
           Text(
             info as String,
             style: TextStyle(
@@ -81,6 +77,7 @@ class Statistics extends StatelessWidget {
           ),
         ],
       ),
+      )
     );
   }
 }

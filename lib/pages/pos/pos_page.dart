@@ -3,6 +3,8 @@ import 'package:first_flutter_project/pages/pos/cart_panel.dart';
 import 'package:first_flutter_project/pages/pos/categories_button.dart';
 import 'package:flutter/material.dart';
 
+ValueNotifier<bool> isCart = ValueNotifier<bool>(false);
+
 class PosPage extends StatelessWidget {
   const PosPage({super.key});
 
@@ -10,20 +12,23 @@ class PosPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-
         Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Expanded(
-              child: ListView(
-                scrollDirection: Axis.vertical,
-                shrinkWrap: true,
-                children: [
-
-                  const CategoriesButton(),
-                  const CardItems(),
-                  const CartPanel()
-                ],
+              child: ListenableBuilder(
+                listenable: isCart,
+                builder: (context, _) {
+                  return ListView(
+                    scrollDirection: Axis.vertical,
+                    shrinkWrap: true,
+                    children: [
+                      if(!isCart.value)
+                        const CategoriesButton(),
+                      isCart.value ? const CartPanel() : const CardItems(),
+                    ],
+                  );
+                },
               ),
             ),
           ],
@@ -34,14 +39,14 @@ class PosPage extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsetsGeometry.all(10),
             child: ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: () {
+                isCart.value = !isCart.value;
+              },
               icon: Icon(Icons.shopping_cart),
               label: Text('Cart'),
             ),
           ),
         ),
-
-
       ],
     );
   }

@@ -1,3 +1,4 @@
+import 'package:first_flutter_project/global/stock/stock_global.dart';
 import 'package:first_flutter_project/pages/stockpage/stock_page.dart';
 import 'package:flutter/material.dart';
 
@@ -10,13 +11,17 @@ class HomeStatistics extends StatefulWidget {
 }
 
 class _HomeStatisticsState extends State<HomeStatistics> {
+
   double totalRevenue = 0.00;
   int orders = 0;
-  double inventory = TotalInventoryValue().getInventoryValue();
   int creditOutstanding = 0;
 
   @override
   Widget build(BuildContext context) {
+    StockGlobal().setGlobalItems();
+    StockGlobal().setTotalInventoryValue();
+    double inventory = TotalInventoryValue().getInventoryValue();
+
     return Container(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -58,7 +63,7 @@ class _HomeStatisticsState extends State<HomeStatistics> {
                   title: 'INVENTORY',
                   value: 'NLE ${inventory.toStringAsFixed(2)}',
                   color: Colors.black,
-                  info: '0 Products',
+                  info: '${GlobalItems.lists.length} Products',
                   infoColor: Colors.grey,
                     iconUrl: 'assets/icons/inventory.png',
                     iconColor: Colors.grey
