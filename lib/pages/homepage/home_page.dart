@@ -123,7 +123,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ),
               Text(
-                'NLE ${order.total.toStringAsFixed(2)}',
+                'SLE ${order.total.toStringAsFixed(2)}',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,

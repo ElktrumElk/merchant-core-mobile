@@ -45,7 +45,7 @@ class _HomeStatisticsState extends State<HomeStatistics> {
                   Expanded(
                     child: _buildStatCard(
                       title: 'TOTAL REVENUE',
-                      value: 'NLE ${totalRevenue.toStringAsFixed(2)}',
+                      value: 'SLE ${totalRevenue.toStringAsFixed(2)}',
                       color: theme.colorScheme.onSurface,
                       info: '$orders order${orders == 1 ? '' : 's'} completed',
                       infoColor: Colors.green,
@@ -74,7 +74,7 @@ class _HomeStatisticsState extends State<HomeStatistics> {
                   Expanded(
                     child: _buildStatCard(
                       title: 'INVENTORY',
-                      value: 'NLE ${inventory.toStringAsFixed(2)}',
+                      value: 'SLE ${inventory.toStringAsFixed(2)}',
                       color: theme.colorScheme.onSurface,
                       info: '${GlobalItems.lists.length} Products',
                       infoColor: Colors.grey,
@@ -86,7 +86,7 @@ class _HomeStatisticsState extends State<HomeStatistics> {
                   Expanded(
                     child: _buildStatCard(
                       title: 'CREDIT OUTSTANDING',
-                      value: 'NLE ${creditOutstanding.toStringAsFixed(2)}',
+                      value: 'SLE ${creditOutstanding.toStringAsFixed(2)}',
                       color: Colors.amber.shade700,
                       info: '${_creditStore.overdueCount} overdue',
                       infoColor: Colors.grey,

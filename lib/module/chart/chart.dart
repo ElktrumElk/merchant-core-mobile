@@ -95,7 +95,7 @@ class RevenueLineChart extends StatelessWidget {
                   return Padding(
                     padding: const EdgeInsets.only(right: 6),
                     child: Text(
-                      'NLE ${value.toInt()}',
+                      'SLE ${value.toInt()}',
                       style: TextStyle(
                         fontSize: 10,
                         color: theme.colorScheme.onSurface.withAlpha(120),

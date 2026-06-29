@@ -1,8 +1,11 @@
 import 'package:first_flutter_project/components/pageTitle/pageTitle.dart';
+import 'package:first_flutter_project/components/settings/notification_panel.dart';
 import 'package:first_flutter_project/components/settings/settings.dart';
 import 'package:first_flutter_project/global/app_theme.dart';
 import 'package:first_flutter_project/global/theme_notifier.dart';
+import 'package:first_flutter_project/pages/calcpage/calc_page.dart';
 import 'package:first_flutter_project/pages/creditPage/credit_ledger.dart';
+import 'package:first_flutter_project/pages/morepage/more_page.dart';
 import 'package:first_flutter_project/pages/homepage/home_page.dart';
 import 'package:first_flutter_project/pages/pos/pos_page.dart';
 import 'package:first_flutter_project/pages/splash/splash_screen.dart';
@@ -88,8 +91,8 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
       const StockPage(), // stock page
       const PosPage(),
       const CreditLedger(),
-      const Center(child: Text('Calc Page')),
-      const Center(child: Text('More Page')),
+      const CalcPage(),
+      const MorePage(),
     ];
 
   }
@@ -109,13 +112,11 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
         ),
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () => NotificationPanel().show(context),
             icon: const Icon(Icons.notifications_none),
           ),
           IconButton(
-            onPressed: () {
-              SettingPanel().showSettingPanel(context);
-            },
+            onPressed: () => SettingPanel().showSettingPanel(context),
             icon: const Icon(Icons.settings),
           ),
         ],

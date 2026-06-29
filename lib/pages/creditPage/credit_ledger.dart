@@ -72,7 +72,7 @@ class _CreditLedgerState extends State<CreditLedger> {
                     mainAxisCellCount: 2,
                     child: Statistics(
                       title: 'Total Outstanding',
-                      heroValue: 'NLE ${_creditStore.totalOutstanding.toStringAsFixed(2)}',
+                      heroValue: 'SLE ${_creditStore.totalOutstanding.toStringAsFixed(2)}',
                       hero: true,
                       info: '${_creditStore.overdueCount} overdue',
                     ),
@@ -93,7 +93,7 @@ class _CreditLedgerState extends State<CreditLedger> {
                     mainAxisCellCount: 1,
                     child: Statistics(
                       title: 'Collected',
-                      value: 'NLE ${_creditStore.collected.toStringAsFixed(2)}',
+                      value: 'SLE ${_creditStore.collected.toStringAsFixed(2)}',
                       color: Colors.green.shade600,
                       iconUrl: 'assets/icons/dollar.png',
                       iconColor: Colors.green.shade600,
@@ -211,7 +211,7 @@ class _CreditLedgerState extends State<CreditLedger> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                'NLE ${user.amount.toStringAsFixed(2)}',
+                'SLE ${user.amount.toStringAsFixed(2)}',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,

@@ -36,7 +36,7 @@ class StockStatistics extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Statistics(title: 'Value', value: 'NLE ${totalValue.toStringAsFixed(2)}'),
+                child: Statistics(title: 'Value', value: 'SLE ${totalValue.toStringAsFixed(2)}'),
               ),
               const SizedBox(width: 10),
               Expanded(
