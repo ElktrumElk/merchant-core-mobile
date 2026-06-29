@@ -9,6 +9,10 @@ class SettingPanel {
   void showSettingPanel(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    void close() {
+      Navigator.of(context).pop(true);
+    }
+
     showModalBottomSheet(
       showDragHandle: true,
       context: context,
@@ -64,7 +68,9 @@ class SettingPanel {
 
               ToggleCard(name: 'Notification', icon: Icons.notification_important, listenable: GlobalValueNotifiers.isGetNotify),
               const SizedBox(height: 10,),
-              ToggleCard(name: 'Enable Backup', icon: Icons.cloud_upload_outlined, listenable: GlobalValueNotifiers.isBackupEnable)
+              ToggleCard(name: 'Enable Backup', icon: Icons.cloud_upload_outlined, listenable: GlobalValueNotifiers.isBackupEnable),
+
+
 
               // Enable button
             ],

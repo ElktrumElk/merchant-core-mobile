@@ -1,4 +1,5 @@
 import 'package:first_flutter_project/components/settings/user.dart';
+import 'package:first_flutter_project/network/logout/logout.dart';
 import 'package:flutter/material.dart';
 
 class UserDetails extends StatelessWidget {
@@ -34,6 +35,11 @@ class UserDetails extends StatelessWidget {
               ),
             ],
           ),
+          const Spacer(),
+          IconButton(onPressed: () {
+            Logout().logout();
+            Navigator.of(context).pop(true);
+          }, icon: Icon(Icons.logout_rounded, color: Colors.red, ))
         ],
       ),
     );

@@ -1,5 +1,6 @@
 import 'package:first_flutter_project/components/settings/user.dart';
 import 'package:first_flutter_project/global/auth_global.dart';
+import 'package:first_flutter_project/global/theme_notifier.dart';
 import 'package:first_flutter_project/main.dart';
 import 'package:first_flutter_project/module/storage/device_storage.dart';
 import 'package:first_flutter_project/network/authentication/user_authentication.dart';
@@ -64,12 +65,16 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
+      decoration:  BoxDecoration(
+        gradient:  LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
+          colors: themeNotifier.isDarkMode ? [
+            theme.scaffoldBackgroundColor,
+            theme.cardColor,
+          ]: [
             Color(0xFFFFFFFF),
             Color(0xFFF4F5F7),
           ],
@@ -86,14 +91,14 @@ class _SplashScreenState extends State<SplashScreen> {
                 color: Colors.white.withAlpha(30),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.leaderboard, size: 48, color: Colors.black),
+              child: Icon(Icons.leaderboard, size: 48, color: themeNotifier.isDarkMode ? Colors.white : Colors.black),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Merchant Core',
 
               style: TextStyle(
-                color: Colors.black,
+                color: themeNotifier.isDarkMode ? Colors.white : Colors.black,
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
                 decoration: TextDecoration.none,
