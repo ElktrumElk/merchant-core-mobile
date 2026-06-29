@@ -71,6 +71,7 @@ class _CardItemState extends State<CardItems> {
                       child: FilledButton(
                         onPressed: () {
                           if (product.quantity <= 0) {
+                            itemsData[index].inStock = false;
                             return;
                           }
                           AddItemsToCart().addProduct(product);

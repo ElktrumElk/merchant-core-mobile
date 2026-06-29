@@ -43,14 +43,6 @@ class CreditStore extends ChangeNotifier {
 
   void loadSampleData() {
     if (_users.isNotEmpty) return;
-    _users.addAll([
-      CreditUser(id: 1, name: 'Alice Johnson', amount: 2500.00, dueDate: '2026-07-15', status: CreditStatus.pending),
-      CreditUser(id: 2, name: 'Bob Smith', amount: 4800.00, dueDate: '2026-06-30', status: CreditStatus.overdue),
-      CreditUser(id: 3, name: 'Carol White', amount: 1200.00, dueDate: '2026-07-20', status: CreditStatus.paid),
-      CreditUser(id: 4, name: 'David Brown', amount: 3200.00, dueDate: '2026-08-01', status: CreditStatus.pending),
-      CreditUser(id: 5, name: 'Eve Davis', amount: 1500.00, dueDate: '2026-06-25', status: CreditStatus.overdue),
-      CreditUser(id: 6, name: 'Frank Wilson', amount: 6000.00, dueDate: '2026-07-10', status: CreditStatus.pending),
-    ]);
     notifyListeners();
   }
 

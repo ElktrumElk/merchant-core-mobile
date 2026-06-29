@@ -56,12 +56,24 @@ class StockPage extends StatefulWidget {
 
 class _StockPageState extends State<StockPage> {
   List<Product> items = StockGlobal().itemsList;
+  String _stockFilter = 'All';
 
   TextEditingController productName = TextEditingController();
   TextEditingController productQuantity = TextEditingController();
   TextEditingController productPrice = TextEditingController();
   String typeEdit = 'add';
   int editItemId = 0;
+
+  List<Product> get _filteredItems {
+    if (_stockFilter == 'All') return items;
+    return items.where((p) {
+      final low = p.quantity >= 1 && p.quantity < 15;
+      if (_stockFilter == 'In Stock') return p.inStock && !low;
+      if (_stockFilter == 'Low Stock') return low;
+      if (_stockFilter == 'Out of Stock') return !p.inStock || p.quantity <= 0;
+      return true;
+    }).toList();
+  }
 
   void _showAddModal(BuildContext context) {
     final theme = Theme.of(context);
@@ -306,14 +318,46 @@ class _StockPageState extends State<StockPage> {
           ),
         ),
 
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: ['All', 'In Stock', 'Low Stock', 'Out of Stock'].map((label) {
+                final selected = _stockFilter == label;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(label),
+                    selected: selected,
+                    onSelected: (_) => setState(() => _stockFilter = label),
+                    selectedColor: const Color(0xFF1565C0),
+                    labelStyle: TextStyle(
+                      color: selected ? Colors.white : theme.colorScheme.onSurface,
+                      fontSize: 13,
+                    ),
+                    backgroundColor: theme.cardColor,
+                    side: BorderSide(color: theme.dividerColor),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+
         const SizedBox(height: 10),
 
-        if (items.isEmpty)
+        if (_filteredItems.isEmpty)
           Center(
             child: Padding(
               padding: EdgeInsets.all(20.0),
               child: Text(
-                'No products available.',
+                _stockFilter == 'All'
+                    ? 'No products available.'
+                    : 'No $_stockFilter items.',
                 style: TextStyle(
                   color: theme.colorScheme.onSurface.withAlpha(150),
                 ),
@@ -322,12 +366,12 @@ class _StockPageState extends State<StockPage> {
           )
         else
           ListView.builder(
-            itemCount: items.length,
+            itemCount: _filteredItems.length,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemBuilder: (context, index) {
-              final product = items[index];
-
+              final product = _filteredItems[index];
+              bool lowStock = product.quantity >= 1 && product.quantity < 15;
               return Container(
                 padding: const EdgeInsets.all(10),
                 margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -400,24 +444,24 @@ class _StockPageState extends State<StockPage> {
                                         decoration: BoxDecoration(
                                           border: Border.all(
                                             color: product.inStock
-                                                ? Colors.green
+                                                ? lowStock ? Colors.orange : Colors.green
                                                 : Colors.red,
                                           ),
                                           color: product.inStock
-                                              ? Colors.green.withAlpha(70)
+                                              ? lowStock ? Colors.orange.withAlpha(70): Colors.green.withAlpha(70)
                                               : Colors.red.withAlpha(70),
                                           borderRadius: BorderRadius.circular(
                                             10,
                                           ),
                                         ),
                                         child: Text(
-                                          product.inStock
+                                          lowStock ? 'Low Stock' : product.inStock
                                               ? 'In Stock'
                                               : 'Out of Stock',
                                           style: TextStyle(
                                             fontSize: 12,
                                             color: product.inStock
-                                                ? Colors.green[800]
+                                                ? lowStock ? Colors.orange[800]: Colors.green[800]
                                                 : Colors.red[800],
                                           ),
                                         ),

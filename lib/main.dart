@@ -5,12 +5,17 @@ import 'package:first_flutter_project/global/theme_notifier.dart';
 import 'package:first_flutter_project/pages/creditPage/credit_ledger.dart';
 import 'package:first_flutter_project/pages/homepage/home_page.dart';
 import 'package:first_flutter_project/pages/pos/pos_page.dart';
+import 'package:first_flutter_project/pages/splash/splash_screen.dart';
 import 'package:first_flutter_project/pages/stockpage/stock_page.dart';
 import 'package:flutter/material.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await themeNotifier.init();
   runApp(const MyApp());
 }
+
+ValueNotifier<bool> isSplashScreen = ValueNotifier<bool>(true);
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -25,7 +30,14 @@ class MyApp extends StatelessWidget {
           darkTheme: AppTheme.darkTheme,
           themeMode: themeMode,
           debugShowCheckedModeBanner: false,
-          home: MainLayoutShell(),
+          home: ListenableBuilder(
+            listenable: isSplashScreen,
+            builder: (context, _) {
+              return isSplashScreen.value
+                  ? const SplashScreen()
+                  : const MainLayoutShell();
+            },
+          ),
         );
       },
     );
@@ -53,6 +65,8 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
     'Calc',
     'More',
   ];
+
+
   final List<IconData> icons = [
     Icons.dashboard,
     Icons.inventory_2,
@@ -66,7 +80,7 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
   late final List<Widget> _pages;
 
   @override
-  void initState() {
+  void initState()  {
     super.initState();
     // Initialize your pages array (added placeholder containers for demo)
     _pages = [
@@ -77,13 +91,16 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
       const Center(child: Text('Calc Page')),
       const Center(child: Text('More Page')),
     ];
+
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        shape: Border(bottom: BorderSide(color: Theme.of(context).dividerColor, width: 1)),
+        shape: Border(
+          bottom: BorderSide(color: Theme.of(context).dividerColor, width: 1),
+        ),
         toolbarHeight: 80,
         centerTitle: false,
         title: PageTitle(

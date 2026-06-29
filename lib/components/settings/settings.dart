@@ -1,11 +1,10 @@
+import 'package:first_flutter_project/components/settings/toggle_card.dart';
 import 'package:first_flutter_project/components/settings/userDetails.dart';
 import 'package:first_flutter_project/global/theme_notifier.dart';
+import 'package:first_flutter_project/global/valueNotifiers/gloabal_value_notifiers.dart';
 import 'package:flutter/material.dart';
 
 class SettingPanel {
-  ValueNotifier<IconData> getNotifications = ValueNotifier<IconData>(
-    Icons.toggle_on,
-  );
 
   void showSettingPanel(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -60,41 +59,14 @@ class SettingPanel {
                   ],
                 ),
               ),
+
               const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade100,
-                  borderRadius: BorderRadius.all(Radius.circular(20)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.notifications, color: Colors.grey),
-                    const SizedBox(width: 10),
-                    Text(
-                      'Get Notifications',
-                      style: TextStyle(fontSize: 17, color: Theme.of(context).colorScheme.onSurface),
-                    ),
-                    const Spacer(),
-                    ListenableBuilder(
-                      listenable: getNotifications,
-                      builder: (context, _) {
-                        return IconButton(
-                          onPressed: () {
-                            if (getNotifications.value == Icons.toggle_off_outlined) {
-                              getNotifications.value = Icons.toggle_on;
-                            } else {
-                              getNotifications.value = Icons.toggle_off_outlined;
-                            }
-                          },
-                          icon: Icon(getNotifications.value, color: Colors.blue,),
-                          iconSize: 50,
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
+
+              ToggleCard(name: 'Notification', icon: Icons.notification_important, listenable: GlobalValueNotifiers.isGetNotify),
+              const SizedBox(height: 10,),
+              ToggleCard(name: 'Enable Backup', icon: Icons.cloud_upload_outlined, listenable: GlobalValueNotifiers.isBackupEnable)
+
+              // Enable button
             ],
           ),
         );
