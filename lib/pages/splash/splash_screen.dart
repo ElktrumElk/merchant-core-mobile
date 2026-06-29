@@ -6,6 +6,8 @@ import 'package:first_flutter_project/network/authentication/user_authentication
 import 'package:first_flutter_project/pages/authentication/login/user_login.dart';
 import 'package:flutter/material.dart';
 
+bool showGetStartedButton = false;
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -24,11 +26,16 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _autoRouteIfLoggedIn() async {
     final loggedIn = await checkIsLogin();
     if (!mounted) return;
+
     if (loggedIn) {
+
       await _fetchUserDetails();
       if (mounted) {
         isSplashScreen.value = false;
       }
+    }
+    else {
+      showGetStartedButton = true;
     }
   }
 
@@ -104,26 +111,27 @@ class _SplashScreenState extends State<SplashScreen> {
               ),
             ),
             const SizedBox(height: 40),
-            SizedBox(
-              width: 220,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _openAuth,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black87,
-                  foregroundColor: const Color(0xFF379AFF),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+            if (showGetStartedButton)
+              SizedBox(
+                width: 220,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _openAuth,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black87,
+                    foregroundColor: const Color(0xFF379AFF),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 4,
+                    shadowColor: Colors.black38,
                   ),
-                  elevation: 4,
-                  shadowColor: Colors.black38,
-                ),
-                child:  const Text(
-                  'Get Started',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  child:  const Text(
+                    'Get Started',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),
