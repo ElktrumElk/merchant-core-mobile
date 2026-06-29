@@ -33,7 +33,10 @@ class _CardItemState extends State<CardItems> {
             final product = itemsData[index];
 
             return Card(
+              shape: Border.all(color: Theme.of(context).dividerColor),
               color: theme.cardColor,
+              borderOnForeground: true,
+
               elevation: 2,
               child: Padding(
                 padding: const EdgeInsets.all(10),
@@ -86,7 +89,7 @@ class _CardItemState extends State<CardItems> {
                               : Colors.black,
                           disabledBackgroundColor: Colors.grey,
                           foregroundColor: Colors.white,
-                          side: const BorderSide(color: Colors.grey),
+
                           padding: EdgeInsets.zero,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),

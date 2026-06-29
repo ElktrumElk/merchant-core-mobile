@@ -1,3 +1,4 @@
+import 'package:first_flutter_project/global/sales_global.dart';
 import 'package:flutter/material.dart';
 import 'package:first_flutter_project/pages/stockpage/stock_page.dart';
 
@@ -212,7 +213,16 @@ class _CartPanelState extends State<CartPanel> {
                   onPressed: cartList.isEmpty
                       ? null
                       : () {
-                    // Place your checkout processing logic here
+                    final products = cartList.map((item) => item.product).toList();
+                    OrderStore().addOrder(products, cart.totalPrice);
+                    cart.clearCart();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Order completed!'),
+                        duration: Duration(seconds: 2),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
                   },
                   style: FilledButton.styleFrom(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

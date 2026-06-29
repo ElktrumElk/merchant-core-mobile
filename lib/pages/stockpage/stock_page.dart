@@ -26,8 +26,6 @@ class GlobalItems {
   List<Product> getLists() {
     return lists;
   }
-
-
 }
 // ================================================
 
@@ -80,7 +78,11 @@ class _StockPageState extends State<StockPage> {
                 children: [
                   Text(
                     'Add New items',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight(500), color: theme.colorScheme.onSurface),
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight(500),
+                      color: theme.colorScheme.onSurface,
+                    ),
                   ),
                   const Spacer(),
                   TextButton(
@@ -88,7 +90,12 @@ class _StockPageState extends State<StockPage> {
                       if (int.tryParse(productQuantity.text) == null) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Quantity should be a number', style: TextStyle(color: theme.colorScheme.onSurface)),
+                            content: Text(
+                              'Quantity should be a number',
+                              style: TextStyle(
+                                color: theme.colorScheme.onSurface,
+                              ),
+                            ),
                             duration: const Duration(seconds: 1),
                           ),
                         );
@@ -97,7 +104,12 @@ class _StockPageState extends State<StockPage> {
                       if (double.tryParse(productPrice.text) == null) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Price should be a Decimal number. Example: 1.00', style: TextStyle(color: theme.colorScheme.onSurface)),
+                            content: Text(
+                              'Price should be a Decimal number. Example: 1.00',
+                              style: TextStyle(
+                                color: theme.colorScheme.onSurface,
+                              ),
+                            ),
                             duration: const Duration(seconds: 1),
                           ),
                         );
@@ -109,14 +121,15 @@ class _StockPageState extends State<StockPage> {
                           int.parse(productQuantity.text),
                           double.parse(productPrice.text),
                         );
-                      }
-                      else {
+                      } else {
                         setState(() {
                           GlobalItems.lists[editItemId].name = productName.text;
-                          GlobalItems.lists[editItemId].price =
-                              double.parse(productPrice.text);
-                          GlobalItems.lists[editItemId].quantity =
-                              int.parse(productQuantity.text);
+                          GlobalItems.lists[editItemId].price = double.parse(
+                            productPrice.text,
+                          );
+                          GlobalItems.lists[editItemId].quantity = int.parse(
+                            productQuantity.text,
+                          );
                         });
                       }
                       productPrice.clear();
@@ -124,7 +137,10 @@ class _StockPageState extends State<StockPage> {
                       productName.clear();
                       Navigator.pop(context);
                     },
-                    child: Text('Done', style: TextStyle(color: theme.colorScheme.primary)),
+                    child: Text(
+                      'Done',
+                      style: TextStyle(color: theme.colorScheme.primary),
+                    ),
                   ),
                 ],
               ),
@@ -137,8 +153,12 @@ class _StockPageState extends State<StockPage> {
                     decoration: InputDecoration(
                       hintText: 'Milk',
                       labelText: 'Product Name',
-                      labelStyle: TextStyle(color: theme.colorScheme.onSurface.withAlpha(180)),
-                      hintStyle: TextStyle(color: theme.colorScheme.onSurface.withAlpha(100)),
+                      labelStyle: TextStyle(
+                        color: theme.colorScheme.onSurface.withAlpha(180),
+                      ),
+                      hintStyle: TextStyle(
+                        color: theme.colorScheme.onSurface.withAlpha(100),
+                      ),
                       icon: Icon(Icons.add, color: theme.colorScheme.onSurface),
                       focusedBorder: InputBorder.none,
                       enabledBorder: InputBorder.none,
@@ -152,8 +172,12 @@ class _StockPageState extends State<StockPage> {
                     decoration: InputDecoration(
                       hintText: 'Quantity: 1',
                       labelText: 'Quantity',
-                      labelStyle: TextStyle(color: theme.colorScheme.onSurface.withAlpha(180)),
-                      hintStyle: TextStyle(color: theme.colorScheme.onSurface.withAlpha(100)),
+                      labelStyle: TextStyle(
+                        color: theme.colorScheme.onSurface.withAlpha(180),
+                      ),
+                      hintStyle: TextStyle(
+                        color: theme.colorScheme.onSurface.withAlpha(100),
+                      ),
                       icon: Icon(Icons.add, color: theme.colorScheme.onSurface),
                       focusedBorder: InputBorder.none,
                       enabledBorder: InputBorder.none,
@@ -167,8 +191,12 @@ class _StockPageState extends State<StockPage> {
                     decoration: InputDecoration(
                       hintText: 'Price: 1.00',
                       labelText: 'Price',
-                      labelStyle: TextStyle(color: theme.colorScheme.onSurface.withAlpha(180)),
-                      hintStyle: TextStyle(color: theme.colorScheme.onSurface.withAlpha(100)),
+                      labelStyle: TextStyle(
+                        color: theme.colorScheme.onSurface.withAlpha(180),
+                      ),
+                      hintStyle: TextStyle(
+                        color: theme.colorScheme.onSurface.withAlpha(100),
+                      ),
                       icon: Icon(Icons.add, color: theme.colorScheme.onSurface),
                       focusedBorder: InputBorder.none,
                       enabledBorder: InputBorder.none,
@@ -253,22 +281,26 @@ class _StockPageState extends State<StockPage> {
                   hintText: 'Milk: ',
                   leading: Icon(Icons.search),
                   backgroundColor: WidgetStateProperty.all(theme.cardColor),
-                  hintStyle: WidgetStateProperty.all(TextStyle(color: theme.colorScheme.onSurface.withAlpha(150))),
+                  hintStyle: WidgetStateProperty.all(
+                    TextStyle(
+                      color: theme.colorScheme.onSurface.withAlpha(150),
+                    ),
+                  ),
                 ),
               ),
-             const SizedBox(width: 20,),
-             ElevatedButton.icon(
+              const SizedBox(width: 20),
+              ElevatedButton.icon(
                 onPressed: () {
                   _showAddModal(context);
                   typeEdit = 'add';
                 },
-               label: Text('Add'),
+                label: Text('Add'),
                 icon: Icon(Icons.add),
-               style: ElevatedButton.styleFrom(
-                 elevation: 5,
-                 backgroundColor: theme.cardColor,
-                 foregroundColor: theme.colorScheme.onSurface,
-               ),
+                style: ElevatedButton.styleFrom(
+                  elevation: 5,
+                  backgroundColor: theme.cardColor,
+                  foregroundColor: theme.colorScheme.onSurface,
+                ),
               ),
             ],
           ),
@@ -280,7 +312,12 @@ class _StockPageState extends State<StockPage> {
           Center(
             child: Padding(
               padding: EdgeInsets.all(20.0),
-              child: Text('No products available.', style: TextStyle(color: theme.colorScheme.onSurface.withAlpha(150))),
+              child: Text(
+                'No products available.',
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface.withAlpha(150),
+                ),
+              ),
             ),
           )
         else
@@ -294,14 +331,22 @@ class _StockPageState extends State<StockPage> {
               return Container(
                 padding: const EdgeInsets.all(10),
                 margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(color: theme.cardColor),
+                decoration: BoxDecoration(
+                  color: theme.cardColor,
+                  borderRadius: const BorderRadius.all(Radius.circular(20)),
+                  border: Border.all(color: theme.dividerColor)
+                ),
                 child: Column(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF2C2C2C) : Colors.white60,
-                        borderRadius: const BorderRadius.all(Radius.circular(10)),
+                        color: isDark
+                            ? const Color(0xFF2C2C2C)
+                            : Colors.white60,
+                        borderRadius: const BorderRadius.all(
+                          Radius.circular(10),
+                        ),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -330,7 +375,7 @@ class _StockPageState extends State<StockPage> {
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 10),
+                              const SizedBox(width: 15),
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -338,8 +383,9 @@ class _StockPageState extends State<StockPage> {
                                     spacing: 20,
                                     children: [
                                       Text(
-                                        product.name.length > 10 ?
-                                        '${product.name.substring(0, 7)} ...' : product.name,
+                                        product.name.length > 10
+                                            ? '${product.name.substring(0, 7)} ...'
+                                            : product.name,
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.bold,
@@ -360,7 +406,9 @@ class _StockPageState extends State<StockPage> {
                                           color: product.inStock
                                               ? Colors.green.withAlpha(70)
                                               : Colors.red.withAlpha(70),
-                                          borderRadius: BorderRadius.circular(10),
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
                                         ),
                                         child: Text(
                                           product.inStock
@@ -376,7 +424,13 @@ class _StockPageState extends State<StockPage> {
                                       ),
                                     ],
                                   ),
-                                  Text('Total: ${product.quantity}', style: TextStyle(color: theme.colorScheme.onSurface.withAlpha(180))),
+                                  Text(
+                                    'Total: ${product.quantity}',
+                                    style: TextStyle(
+                                      color: theme.colorScheme.onSurface
+                                          .withAlpha(180),
+                                    ),
+                                  ),
                                 ],
                               ),
                             ],
@@ -390,10 +444,14 @@ class _StockPageState extends State<StockPage> {
                                   editItemId = product.id - 1;
                                   productName.text = product.name;
                                   productPrice.text = product.price.toString();
-                                  productQuantity.text = product.quantity.toString();
-                                      _showAddModal(context);
+                                  productQuantity.text = product.quantity
+                                      .toString();
+                                  _showAddModal(context);
                                 },
-                                icon: Icon(Icons.edit, color: theme.colorScheme.onSurface),
+                                icon: Icon(
+                                  Icons.edit,
+                                  color: theme.colorScheme.onSurface,
+                                ),
                               ),
                               IconButton(
                                 onPressed: () => _deleteItem(product.id),

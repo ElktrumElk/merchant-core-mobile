@@ -1,3 +1,5 @@
+import 'package:first_flutter_project/global/credit_global.dart';
+import 'package:first_flutter_project/global/sales_global.dart';
 import 'package:first_flutter_project/global/stock/stock_global.dart';
 import 'package:first_flutter_project/pages/stockpage/stock_page.dart';
 import 'package:flutter/material.dart';
@@ -7,14 +9,17 @@ class HomeStatistics extends StatefulWidget {
 
   @override
   State<HomeStatistics> createState() => _HomeStatisticsState();
-
 }
 
 class _HomeStatisticsState extends State<HomeStatistics> {
+  final OrderStore _orderStore = OrderStore();
+  final CreditStore _creditStore = CreditStore();
 
-  double totalRevenue = 0.00;
-  int orders = 0;
-  int creditOutstanding = 0;
+  @override
+  void initState() {
+    super.initState();
+    _creditStore.loadSampleData();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,73 +28,82 @@ class _HomeStatisticsState extends State<HomeStatistics> {
     double inventory = TotalInventoryValue().getInventoryValue();
     final theme = Theme.of(context);
 
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return ListenableBuilder(
+      listenable: Listenable.merge([_orderStore, _creditStore]),
+      builder: (context, _) {
+        final totalRevenue = _orderStore.totalRevenue;
+        final orders = _orderStore.orderCount;
+        final creditOutstanding = _creditStore.totalOutstanding;
+
+        return Container(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
             children: [
-              Expanded(
-                child: _buildStatCard(
-                  title: 'TOTAL REVENUE',
-                  value: 'NLE ${totalRevenue.toStringAsFixed(2)}',
-                  color: theme.colorScheme.onSurface,
-                  info: 'NLE${totalRevenue.toStringAsFixed(2)} this month',
-                  infoColor: Colors.green,
-                  iconUrl: 'assets/icons/dollar.png',
-                  iconColor: Colors.grey
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      title: 'TOTAL REVENUE',
+                      value: 'NLE ${totalRevenue.toStringAsFixed(2)}',
+                      color: theme.colorScheme.onSurface,
+                      info: '$orders order${orders == 1 ? '' : 's'} completed',
+                      infoColor: Colors.green,
+                      iconUrl: 'assets/icons/dollar.png',
+                      iconColor: Colors.grey
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _buildStatCard(
+                      title: 'ORDERS',
+                      value: orders.toString(),
+                      color: theme.colorScheme.onSurface,
+                      info: '$orders total order${orders == 1 ? '' : 's'}',
+                      infoColor: Colors.grey,
+                      iconUrl: 'assets/icons/increase.png',
+                      iconColor: Colors.grey
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _buildStatCard(
-                  title: 'ORDERS',
-                  value: orders.toString(),
-                  color: theme.colorScheme.onSurface,
-                  info: '${orders.toString()} active customers',
-                  infoColor: Colors.grey,
-                    iconUrl: 'assets/icons/increase.png',
-                    iconColor: Colors.grey
-                ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      title: 'INVENTORY',
+                      value: 'NLE ${inventory.toStringAsFixed(2)}',
+                      color: theme.colorScheme.onSurface,
+                      info: '${GlobalItems.lists.length} Products',
+                      infoColor: Colors.grey,
+                      iconUrl: 'assets/icons/inventory.png',
+                      iconColor: Colors.grey
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _buildStatCard(
+                      title: 'CREDIT OUTSTANDING',
+                      value: 'NLE ${creditOutstanding.toStringAsFixed(2)}',
+                      color: Colors.amber.shade700,
+                      info: '${_creditStore.overdueCount} overdue',
+                      infoColor: Colors.grey,
+                      iconUrl: 'assets/icons/alert.png',
+                      iconColor: Colors.amber.shade700
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  title: 'INVENTORY',
-                  value: 'NLE ${inventory.toStringAsFixed(2)}',
-                  color: theme.colorScheme.onSurface,
-                  info: '${GlobalItems.lists.length} Products',
-                  infoColor: Colors.grey,
-                    iconUrl: 'assets/icons/inventory.png',
-                    iconColor: Colors.grey
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _buildStatCard(
-                  title: 'CREDIT OUTSTANDING',
-                  value: creditOutstanding.toString(),
-                  color: Colors.amber.shade700,
-                  info: '${creditOutstanding.toString()} low stock alert',
-                  infoColor: Colors.grey,
-                    iconUrl: 'assets/icons/alert.png',
-                    iconColor: Colors.amber.shade700
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget  _buildStatCard({
+  Widget _buildStatCard({
     String title = 'untitled',
     String value = '',
     Color color = Colors.black,
@@ -131,7 +145,7 @@ class _HomeStatisticsState extends State<HomeStatistics> {
                 ),
               ),
               Image.asset(
-               iconUrl,
+                iconUrl,
                 width: 20,
                 height: 20,
                 color: iconColor,
