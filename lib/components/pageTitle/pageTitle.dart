@@ -8,6 +8,7 @@ class PageTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -15,19 +16,19 @@ class PageTitle extends StatelessWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 22,),
+            Icon(icon, size: 22, color: theme.colorScheme.onSurface),
             const SizedBox(width: 8),
             Text(
               title,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
             ),
           ],
         ),
-        const Text(
+        Text(
           'Here is what happening today',
           style: TextStyle(
             fontSize: 14,
-            color: Colors.grey,
+            color: theme.colorScheme.onSurface.withAlpha(150),
             fontWeight: FontWeight.normal,
           ),
         ),

@@ -26,8 +26,6 @@ class GlobalItems {
   List<Product> getLists() {
     return lists;
   }
-
-
 }
 // ================================================
 
@@ -58,6 +56,7 @@ class StockPage extends StatefulWidget {
 
 class _StockPageState extends State<StockPage> {
   List<Product> items = StockGlobal().itemsList;
+  String _stockFilter = 'All';
 
   TextEditingController productName = TextEditingController();
   TextEditingController productQuantity = TextEditingController();
@@ -65,13 +64,25 @@ class _StockPageState extends State<StockPage> {
   String typeEdit = 'add';
   int editItemId = 0;
 
+  List<Product> get _filteredItems {
+    if (_stockFilter == 'All') return items;
+    return items.where((p) {
+      final low = p.quantity >= 1 && p.quantity < 15;
+      if (_stockFilter == 'In Stock') return p.inStock && !low;
+      if (_stockFilter == 'Low Stock') return low;
+      if (_stockFilter == 'Out of Stock') return !p.inStock || p.quantity <= 0;
+      return true;
+    }).toList();
+  }
+
   void _showAddModal(BuildContext context) {
+    final theme = Theme.of(context);
     showModalBottomSheet(
       showDragHandle: true,
       context: context,
+      backgroundColor: theme.cardColor,
       builder: (context) {
         return Container(
-
           padding: const EdgeInsets.all(10),
           child: Column(
             children: [
@@ -79,26 +90,39 @@ class _StockPageState extends State<StockPage> {
                 children: [
                   Text(
                     'Add New items',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight(500)),
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight(500),
+                      color: theme.colorScheme.onSurface,
+                    ),
                   ),
                   const Spacer(),
                   TextButton(
                     onPressed: () {
                       if (int.tryParse(productQuantity.text) == null) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-
-                            content: Text('Quantity should be a number'),
-                            duration: Duration(seconds: 1),
+                          SnackBar(
+                            content: Text(
+                              'Quantity should be a number',
+                              style: TextStyle(
+                                color: theme.colorScheme.onSurface,
+                              ),
+                            ),
+                            duration: const Duration(seconds: 1),
                           ),
                         );
                         return;
                       }
                       if (double.tryParse(productPrice.text) == null) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Price should be a Decimal number. Example: 1.00'),
-                            duration: Duration(seconds: 1),
+                          SnackBar(
+                            content: Text(
+                              'Price should be a Decimal number. Example: 1.00',
+                              style: TextStyle(
+                                color: theme.colorScheme.onSurface,
+                              ),
+                            ),
+                            duration: const Duration(seconds: 1),
                           ),
                         );
                         return;
@@ -109,71 +133,88 @@ class _StockPageState extends State<StockPage> {
                           int.parse(productQuantity.text),
                           double.parse(productPrice.text),
                         );
-                      }
-                      else {
+                      } else {
                         setState(() {
                           GlobalItems.lists[editItemId].name = productName.text;
-                          GlobalItems.lists[editItemId].price =
-                              double.parse(productPrice.text);
-                          GlobalItems.lists[editItemId].quantity =
-                              int.parse(productQuantity.text);
+                          GlobalItems.lists[editItemId].price = double.parse(
+                            productPrice.text,
+                          );
+                          GlobalItems.lists[editItemId].quantity = int.parse(
+                            productQuantity.text,
+                          );
                         });
-
                       }
                       productPrice.clear();
                       productQuantity.clear();
                       productName.clear();
-
                       Navigator.pop(context);
-
                     },
-                    child: Text('Done'),
+                    child: Text(
+                      'Done',
+                      style: TextStyle(color: theme.colorScheme.primary),
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 10),
-              Container(
-                child: Column(
-                  children: [
-                    TextField(
-                      controller: productName,
-
-                      decoration: InputDecoration(
-                        hint: Text('Milk'),
-                        label: Text('Product Name'),
-                        icon: Icon(Icons.add),
-                        focusedBorder: InputBorder.none,
-                        enabledBorder: InputBorder.none,
+              Column(
+                children: [
+                  TextField(
+                    controller: productName,
+                    style: TextStyle(color: theme.colorScheme.onSurface),
+                    decoration: InputDecoration(
+                      hintText: 'Milk',
+                      labelText: 'Product Name',
+                      labelStyle: TextStyle(
+                        color: theme.colorScheme.onSurface.withAlpha(180),
                       ),
-                    ),
-                    const SizedBox(height: 10),
-
-                    TextField(
-                      controller: productQuantity,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        hint: Text('Quantity: 1'),
-                        label: Text('Quantity'),
-                        icon: Icon(Icons.add),
-                        focusedBorder: InputBorder.none,
-                        enabledBorder: InputBorder.none,
+                      hintStyle: TextStyle(
+                        color: theme.colorScheme.onSurface.withAlpha(100),
                       ),
+                      icon: Icon(Icons.add, color: theme.colorScheme.onSurface),
+                      focusedBorder: InputBorder.none,
+                      enabledBorder: InputBorder.none,
                     ),
-                    const SizedBox(height: 10),
-
-                    TextField(
-                      controller: productPrice,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        hint: Text('Pice: 1.00'),
-                        label: Text('Price'),
-                        icon: Icon(Icons.add),
-                        focusedBorder: InputBorder.none,
-                        enabledBorder: InputBorder.none,
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: productQuantity,
+                    keyboardType: TextInputType.number,
+                    style: TextStyle(color: theme.colorScheme.onSurface),
+                    decoration: InputDecoration(
+                      hintText: 'Quantity: 1',
+                      labelText: 'Quantity',
+                      labelStyle: TextStyle(
+                        color: theme.colorScheme.onSurface.withAlpha(180),
                       ),
+                      hintStyle: TextStyle(
+                        color: theme.colorScheme.onSurface.withAlpha(100),
+                      ),
+                      icon: Icon(Icons.add, color: theme.colorScheme.onSurface),
+                      focusedBorder: InputBorder.none,
+                      enabledBorder: InputBorder.none,
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: productPrice,
+                    keyboardType: TextInputType.number,
+                    style: TextStyle(color: theme.colorScheme.onSurface),
+                    decoration: InputDecoration(
+                      hintText: 'Price: 1.00',
+                      labelText: 'Price',
+                      labelStyle: TextStyle(
+                        color: theme.colorScheme.onSurface.withAlpha(180),
+                      ),
+                      hintStyle: TextStyle(
+                        color: theme.colorScheme.onSurface.withAlpha(100),
+                      ),
+                      icon: Icon(Icons.add, color: theme.colorScheme.onSurface),
+                      focusedBorder: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -218,6 +259,8 @@ class _StockPageState extends State<StockPage> {
     double totalValue = StockGlobal().totalInventoryValue;
     TotalInventoryValue().setInventoryValue(totalValue);
     StockGlobal().setGlobalItems();
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return ListView(
       children: [
@@ -226,7 +269,6 @@ class _StockPageState extends State<StockPage> {
           message: 'Here is what happening on stocks',
         ),
 
-        // Statistics card===============================
         StockStatistics(
           totalItems: totalItems,
           lowStock: lowStock,
@@ -234,79 +276,121 @@ class _StockPageState extends State<StockPage> {
           outOfStock: outOfStock,
         ),
 
-        //=============================================
         const SizedBox(height: 10),
 
-        //Search===========================================
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 1),
           padding: const EdgeInsets.all(10),
-
           decoration: const BoxDecoration(
             borderRadius: BorderRadius.all(Radius.circular(10)),
           ),
-
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
-
             children: [
               Expanded(
-                child: const SearchBar(
+                child: SearchBar(
                   keyboardType: TextInputType.text,
                   hintText: 'Milk: ',
                   leading: Icon(Icons.search),
+                  backgroundColor: WidgetStateProperty.all(theme.cardColor),
+                  hintStyle: WidgetStateProperty.all(
+                    TextStyle(
+                      color: theme.colorScheme.onSurface.withAlpha(150),
+                    ),
+                  ),
                 ),
               ),
-
-             const SizedBox(width: 20,),
-             ElevatedButton.icon(
-
+              const SizedBox(width: 20),
+              ElevatedButton.icon(
                 onPressed: () {
                   _showAddModal(context);
                   typeEdit = 'add';
                 },
-               label: Text('Add'),
+                label: Text('Add'),
                 icon: Icon(Icons.add),
-               style: ElevatedButton.styleFrom(
-                 elevation: 5,
-                 backgroundColor: Colors.white70
-               ),
-
+                style: ElevatedButton.styleFrom(
+                  elevation: 5,
+                  backgroundColor: theme.cardColor,
+                  foregroundColor: theme.colorScheme.onSurface,
+                ),
               ),
             ],
           ),
         ),
 
-        //=======================================
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: ['All', 'In Stock', 'Low Stock', 'Out of Stock'].map((label) {
+                final selected = _stockFilter == label;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(label),
+                    selected: selected,
+                    onSelected: (_) => setState(() => _stockFilter = label),
+                    selectedColor: const Color(0xFF1565C0),
+                    labelStyle: TextStyle(
+                      color: selected ? Colors.white : theme.colorScheme.onSurface,
+                      fontSize: 13,
+                    ),
+                    backgroundColor: theme.cardColor,
+                    side: BorderSide(color: theme.dividerColor),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+
         const SizedBox(height: 10),
 
-        // Items cards loop==============================================
-        if (items.isEmpty)
-          const Center(
+        if (_filteredItems.isEmpty)
+          Center(
             child: Padding(
               padding: EdgeInsets.all(20.0),
-              child: Text('No products available.'),
+              child: Text(
+                _stockFilter == 'All'
+                    ? 'No products available.'
+                    : 'No $_stockFilter items.',
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface.withAlpha(150),
+                ),
+              ),
             ),
           )
         else
           ListView.builder(
-            itemCount: items.length,
+            itemCount: _filteredItems.length,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemBuilder: (context, index) {
-              final product = items[index];
-
+              final product = _filteredItems[index];
+              bool lowStock = product.quantity >= 1 && product.quantity < 15;
               return Container(
                 padding: const EdgeInsets.all(10),
                 margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: const BoxDecoration(color: Colors.white),
+                decoration: BoxDecoration(
+                  color: theme.cardColor,
+                  borderRadius: const BorderRadius.all(Radius.circular(20)),
+                  border: Border.all(color: theme.dividerColor)
+                ),
                 child: Column(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(10),
-                      decoration: const BoxDecoration(
-                        color: Colors.white60,
-                        borderRadius: BorderRadius.all(Radius.circular(10)),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF2C2C2C)
+                            : Colors.white60,
+                        borderRadius: const BorderRadius.all(
+                          Radius.circular(10),
+                        ),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -317,11 +401,11 @@ class _StockPageState extends State<StockPage> {
                                 width: 50,
                                 height: 50,
                                 padding: const EdgeInsets.all(10),
-                                decoration: const BoxDecoration(
-                                  borderRadius: BorderRadius.all(
+                                decoration: BoxDecoration(
+                                  borderRadius: const BorderRadius.all(
                                     Radius.circular(10),
                                   ),
-                                  color: Colors.white,
+                                  color: theme.cardColor,
                                 ),
                                 child: Center(
                                   child: Text(
@@ -334,25 +418,24 @@ class _StockPageState extends State<StockPage> {
                                     ),
                                   ),
                                 ),
-
                               ),
-                              const SizedBox(width: 10),
+                              const SizedBox(width: 15),
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
                                     spacing: 20,
                                     children: [
-                                      
                                       Text(
-                                        product.name.length > 10 ?
-                                        '${product.name.substring(0, 7)} ...' : product.name,
-                                        style: const TextStyle(
+                                        product.name.length > 10
+                                            ? '${product.name.substring(0, 7)} ...'
+                                            : product.name,
+                                        style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.bold,
+                                          color: theme.colorScheme.onSurface,
                                         ),
                                       ),
-
                                       Container(
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 5,
@@ -361,31 +444,37 @@ class _StockPageState extends State<StockPage> {
                                         decoration: BoxDecoration(
                                           border: Border.all(
                                             color: product.inStock
-                                                ? Colors.green
+                                                ? lowStock ? Colors.orange : Colors.green
                                                 : Colors.red,
                                           ),
                                           color: product.inStock
-                                              ? Colors.green.withAlpha(70)
+                                              ? lowStock ? Colors.orange.withAlpha(70): Colors.green.withAlpha(70)
                                               : Colors.red.withAlpha(70),
                                           borderRadius: BorderRadius.circular(
                                             10,
                                           ),
                                         ),
                                         child: Text(
-                                          product.inStock
+                                          lowStock ? 'Low Stock' : product.inStock
                                               ? 'In Stock'
                                               : 'Out of Stock',
                                           style: TextStyle(
                                             fontSize: 12,
                                             color: product.inStock
-                                                ? Colors.green[800]
+                                                ? lowStock ? Colors.orange[800]: Colors.green[800]
                                                 : Colors.red[800],
                                           ),
                                         ),
                                       ),
                                     ],
                                   ),
-                                  Text('Total: ${product.quantity}'),
+                                  Text(
+                                    'Total: ${product.quantity}',
+                                    style: TextStyle(
+                                      color: theme.colorScheme.onSurface
+                                          .withAlpha(180),
+                                    ),
+                                  ),
                                 ],
                               ),
                             ],
@@ -399,11 +488,14 @@ class _StockPageState extends State<StockPage> {
                                   editItemId = product.id - 1;
                                   productName.text = product.name;
                                   productPrice.text = product.price.toString();
-                                  productQuantity.text = product.quantity.toString();
-                                      _showAddModal(context);
-
+                                  productQuantity.text = product.quantity
+                                      .toString();
+                                  _showAddModal(context);
                                 },
-                                icon: const Icon(Icons.edit),
+                                icon: Icon(
+                                  Icons.edit,
+                                  color: theme.colorScheme.onSurface,
+                                ),
                               ),
                               IconButton(
                                 onPressed: () => _deleteItem(product.id),

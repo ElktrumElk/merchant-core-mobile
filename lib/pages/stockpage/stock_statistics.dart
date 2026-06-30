@@ -1,5 +1,4 @@
-
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:first_flutter_project/components/statistics/statistics.dart';
 
 class StockStatistics extends StatelessWidget {
@@ -37,7 +36,7 @@ class StockStatistics extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Statistics(title: 'Value', value: 'NLE ${totalValue.toStringAsFixed(2)}'),
+                child: Statistics(title: 'Value', value: 'SLE ${totalValue.toStringAsFixed(2)}'),
               ),
               const SizedBox(width: 10),
               Expanded(

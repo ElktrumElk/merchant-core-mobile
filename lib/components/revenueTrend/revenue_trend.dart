@@ -8,13 +8,18 @@ class RevenueTrend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(10),
       margin: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.cardColor,
           boxShadow: [
-            BoxShadow(color: Colors.grey.withAlpha(70), offset: const Offset(0, 5))
+            BoxShadow(
+              color: isDark ? Colors.black.withAlpha(130) : Colors.grey.withAlpha(70),
+              offset: const Offset(0, 5),
+            ),
           ],
           borderRadius: BorderRadius.circular(10)),
       child: Column(
@@ -22,16 +27,16 @@ class RevenueTrend extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Revenue Trend',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+              Text('Revenue Trend',
+                  style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)),
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                 decoration: BoxDecoration(
                     border:
-                        Border.all(color: Colors.grey.withAlpha(80), width: .5),
+                        Border.all(color: theme.dividerColor, width: .5),
                     borderRadius: const BorderRadius.all(Radius.circular(10))),
-                child: const Text('Last 6 Month'),
+                child: Text('Last 6 Month', style: TextStyle(color: theme.colorScheme.onSurface)),
               )
             ],
           ),

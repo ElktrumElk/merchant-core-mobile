@@ -42,8 +42,12 @@ class PosPage extends StatelessWidget {
               onPressed: () {
                 isCart.value = !isCart.value;
               },
-              icon: Icon(Icons.shopping_cart),
-              label: Text('Cart'),
+              icon: const Icon(Icons.shopping_cart),
+              label: const Text('Cart'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).cardColor,
+                foregroundColor: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
           ),
         ),

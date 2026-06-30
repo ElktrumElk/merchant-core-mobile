@@ -5,36 +5,30 @@ class CategoriesButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
-      height: 50, // Added height for the horizontal ListView
-
+      height: 50,
       padding: const EdgeInsets.all(10),
-
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-
         children: [
           ListView(
             scrollDirection: Axis.horizontal,
             shrinkWrap: true,
             children: [
-              
               FilledButton(
                 onPressed: () {},
                 style: ButtonStyle(
                   backgroundColor: WidgetStateProperty.all(Colors.transparent),
-                  foregroundColor: WidgetStateProperty.all(Colors.black),
+                  foregroundColor: WidgetStateProperty.all(theme.colorScheme.onSurface),
                   side: WidgetStateProperty.all(
-                    const BorderSide(color: Colors.grey),
+                    BorderSide(color: theme.dividerColor),
                   ),
                 ),
-
                 child: Text('All'),
               ),
             ],
           ),
-
-
         ],
       ),
     );
