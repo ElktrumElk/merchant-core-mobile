@@ -1,4 +1,5 @@
 import 'package:first_flutter_project/global/sales_global.dart';
+import 'package:first_flutter_project/network/credit_service.dart';
 import 'package:flutter/material.dart';
 
 enum CreditStatus { paid, pending, overdue }
@@ -35,15 +36,24 @@ class CreditStore extends ChangeNotifier {
   CreditStore._internal();
 
   final List<CreditUser> _users = [];
+  final CreditService _creditService = CreditService();
 
   List<CreditUser> get users => List.unmodifiable(_users);
   double get totalOutstanding => _users.fold(0.0, (sum, u) => sum + u.amount);
   int get overdueCount => _users.where((u) => u.status == CreditStatus.overdue).length;
   double get collected => _users.where((u) => u.status == CreditStatus.paid).fold(0.0, (sum, u) => sum + u.amount);
 
-  void loadSampleData() {
-    if (_users.isNotEmpty) return;
-    notifyListeners();
+  Future<void> loadSampleData() async {
+    try {
+      final entries = await _creditService.getCreditEntries();
+      _users.clear();
+      if (entries.isNotEmpty) {
+        _users.addAll(entries);
+      }
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Failed to load credits: $e');
+    }
   }
 
   void markAsPaid(int userId) {
@@ -56,16 +66,21 @@ class CreditStore extends ChangeNotifier {
     }
   }
 
-  void addCreditUser(String name, double amount, String dueDate) {
-    final newId = _users.isEmpty ? 1 : _users.map((u) => u.id).reduce((a, b) => a > b ? a : b) + 1;
-    _users.add(CreditUser(
-      id: newId,
-      name: name,
-      amount: amount,
-      dueDate: dueDate,
-      status: CreditStatus.pending,
-    ));
-    notifyListeners();
+  Future<void> addCreditUser(String name, double amount, String dueDate) async {
+    try {
+      await _creditService.createCreditEntry(name, amount, dueDate);
+      await loadSampleData(); // Refresh
+    } catch (e) {
+      final newId = _users.isEmpty ? 1 : _users.map((u) => u.id).reduce((a, b) => a > b ? a : b) + 1;
+      _users.add(CreditUser(
+        id: newId,
+        name: name,
+        amount: amount,
+        dueDate: dueDate,
+        status: CreditStatus.pending,
+      ));
+      notifyListeners();
+    }
   }
 
   void deleteUser(int userId) {

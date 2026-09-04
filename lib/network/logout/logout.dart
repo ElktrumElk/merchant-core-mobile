@@ -1,6 +1,7 @@
 
 import 'package:first_flutter_project/main.dart';
 import 'package:first_flutter_project/module/storage/device_storage.dart';
+import 'package:first_flutter_project/pages/splash/splash_screen.dart';
 
 
 class Logout {
@@ -17,7 +18,6 @@ class Logout {
     await DeviceStorage.deleteValue();
 
     isSplashScreen.value = true;
-
-
+    showGetStartedButton = true;
   }
 }

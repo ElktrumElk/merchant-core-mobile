@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -11,11 +12,29 @@ class SecreteData {
 
   const SecreteData([this.apiToken]);
 
-  static const String authUrl = 'https://merchantcore-api.onrender.com';
+  static const String authUrl = kDebugMode
+      ? 'http://10.0.2.2:8000'
+      : 'https://merchantcore-api.onrender.com';
   static const String authLoginEndpoint = '/api/v1/auth/login';
   static const String authSignupEndpoint = '/api/v1/auth/register';
   static const String verifyEmailEndpoint = '/api/v1/auth/verify-email';
   static const String getUserInfoEndpoint = '/api/v1/users/me';
+
+  // Product endpoints
+  static const String productsEndpoint = '/api/v1/products';
+
+  // POS endpoints
+  static const String checkoutEndpoint = '/api/v1/pos/checkout';
+
+  // Credit endpoints
+  static const String creditEntriesEndpoint = '/api/v1/credit-entries';
+
+  // Market endpoints
+  static const String marketAdvertsEndpoint = '/api/v1/market/advert';
+  static const String marketShopsEndpoint = '/api/v1/market/shops';
+  static const String marketProductsEndpoint = '/api/v1/market/products';
+  static const String marketTopProductsEndpoint = '/api/v1/market/top-products';
+  static const String marketServicesEndpoint = '/api/v1/market/services';
 
   Map<String, String> getHeaders() {
     final headers = {

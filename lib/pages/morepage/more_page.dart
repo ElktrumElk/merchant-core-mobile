@@ -61,7 +61,7 @@ class MorePage extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: theme.cardColor,
+
         borderRadius: BorderRadius.circular(14),
       ),
       child: ListTile(

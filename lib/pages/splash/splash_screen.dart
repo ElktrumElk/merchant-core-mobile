@@ -36,7 +36,9 @@ class _SplashScreenState extends State<SplashScreen> {
       }
     }
     else {
+      setState(() {
       showGetStartedButton = true;
+      });
     }
   }
 
@@ -55,6 +57,7 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _fetchUserDetails() async {
     try {
       final response = await UserService().getUserInfo();
+
       if (response != null && response.statusCode == 200 && mounted) {
         AuthUser().response(response.body);
       }
@@ -136,7 +139,13 @@ class _SplashScreenState extends State<SplashScreen> {
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
-              ),
+              )
+            else
+              SizedBox(
+                height: 50,
+                width: 50,
+                child: CircularProgressIndicator(),
+              )
           ],
         ),
       ),

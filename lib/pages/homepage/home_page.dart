@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:first_flutter_project/components/greetingCard/greeting_card.dart';
 import 'package:first_flutter_project/components/revenueTrend/revenue_trend.dart';
 import 'package:first_flutter_project/components/statistics/home_statistics.dart';
@@ -5,6 +7,7 @@ import 'package:first_flutter_project/components/subcards/sub_cards.dart';
 import 'package:first_flutter_project/global/credit_global.dart';
 import 'package:first_flutter_project/global/sales_global.dart';
 import 'package:first_flutter_project/global/stock/stock_global.dart';
+//import 'package:first_flutter_project/pages/stockpage/stock_page.dart';
 import 'package:flutter/material.dart';
 
 export './home_page.dart';
@@ -19,17 +22,40 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final OrderStore _orderStore = OrderStore();
   final CreditStore _creditStore = CreditStore();
+  Timer? _pollingTimer;
+
+  void _loadItems() async {
+    await StockGlobal.loadItems();
+  }
+
+  void _startPolling() {
+    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      _loadItems();
+      _creditStore.loadSampleData();
+      _orderStore.fetchOrders();
+    });
+  }
 
   @override
   void initState() {
     super.initState();
-    _creditStore.loadSampleData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _creditStore.loadSampleData();
+      _orderStore.fetchOrders();
+    });
+    _loadItems();
+    _startPolling();
   }
 
   @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
+  }
+  @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: Listenable.merge([_orderStore, _creditStore]),
+      listenable: Listenable.merge([_orderStore, _creditStore, StockGlobal()]),
       builder: (context, _) {
         return ListView(
           scrollDirection: Axis.vertical,
@@ -138,10 +164,12 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget _buildAlerts() {
+
     final theme = Theme.of(context);
     final alerts = <Map<String, dynamic>>[];
 
     final lowStockCount = StockGlobal().lowStock;
+
     if (lowStockCount > 0) {
       alerts.add({
         'icon': Icons.inventory_2,

@@ -3,10 +3,13 @@ import 'package:first_flutter_project/components/settings/notification_panel.dar
 import 'package:first_flutter_project/components/settings/settings.dart';
 import 'package:first_flutter_project/global/app_theme.dart';
 import 'package:first_flutter_project/global/theme_notifier.dart';
+import 'package:first_flutter_project/global/sales_global.dart';
 import 'package:first_flutter_project/pages/calcpage/calc_page.dart';
 import 'package:first_flutter_project/pages/creditPage/credit_ledger.dart';
 import 'package:first_flutter_project/pages/morepage/more_page.dart';
 import 'package:first_flutter_project/pages/homepage/home_page.dart';
+import 'package:first_flutter_project/pages/market/MarketScreen.dart';
+import 'package:first_flutter_project/pages/market/market_search_page.dart';
 import 'package:first_flutter_project/pages/pos/pos_page.dart';
 import 'package:first_flutter_project/pages/splash/splash_screen.dart';
 import 'package:first_flutter_project/pages/stockpage/stock_page.dart';
@@ -33,12 +36,10 @@ class MyApp extends StatelessWidget {
           darkTheme: AppTheme.darkTheme,
           themeMode: themeMode,
           debugShowCheckedModeBanner: false,
-          home: ListenableBuilder(
-            listenable: isSplashScreen,
-            builder: (context, _) {
-              return isSplashScreen.value
-                  ? const SplashScreen()
-                  : const MainLayoutShell();
+          home: ValueListenableBuilder<bool>(
+            valueListenable: isSplashScreen,
+            builder: (context, isSplash, _) {
+              return isSplash ? const SplashScreen() : const MainLayoutShell();
             },
           ),
         );
@@ -62,6 +63,7 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
   // List of page titles that match each tab index
   final List<String> _titles = [
     'Dashboard',
+    'Market',
     'Stock',
     'Pos',
     'Credit',
@@ -72,6 +74,7 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
 
   final List<IconData> icons = [
     Icons.dashboard,
+    Icons.storefront,
     Icons.inventory_2,
     Icons.point_of_sale,
     Icons.credit_card,
@@ -88,18 +91,19 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
     // Initialize your pages array (added placeholder containers for demo)
     _pages = [
       const MyHomePage(), // Your existing homepage component
+      const MarketScreen(),
       const StockPage(), // stock page
       const PosPage(),
       const CreditLedger(),
       const CalcPage(),
       const MorePage(),
     ];
-
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         shape: Border(
           bottom: BorderSide(color: Theme.of(context).dividerColor, width: 1),
@@ -111,10 +115,29 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
           icon: icons[_currentIndex],
         ),
         actions: [
-          IconButton(
-            onPressed: () => NotificationPanel().show(context),
-            icon: const Icon(Icons.notifications_none),
+          if (_currentIndex == 1) // Only show search for Market tab
+            IconButton(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MarketSearchPage()),
+              ),
+              icon: const Icon(Icons.search),
+            ),
+
+          ListenableBuilder(
+            listenable: OrderStore(),
+            builder: (context, _) {
+              final bool hasNotifications = OrderStore().orders.isNotEmpty;
+              return IconButton(
+                onPressed: () => NotificationPanel().show(context),
+                icon: Icon(
+                  hasNotifications ? Icons.notifications_active : Icons.notifications_none,
+                  color: hasNotifications ? Colors.blue : null,
+                ),
+              );
+            },
           ),
+
           IconButton(
             onPressed: () => SettingPanel().showSettingPanel(context),
             icon: const Icon(Icons.settings),
@@ -137,6 +160,11 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
             icon: Icon(Icons.dashboard_outlined),
             activeIcon: Icon(Icons.dashboard),
             label: 'Dashboard',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.storefront_outlined),
+            activeIcon: Icon(Icons.storefront),
+            label: 'Market',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.inventory_2_outlined),

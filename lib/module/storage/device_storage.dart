@@ -10,6 +10,7 @@ class DeviceStorage {
   /// Saves the token securely to the device hardware keychain system
   static Future<void> saveValue(String value) async {
     await _storage.write(key: _tokenKey, value: value);
+
   }
 
   /// Reads the encrypted token value back out from hardware storage

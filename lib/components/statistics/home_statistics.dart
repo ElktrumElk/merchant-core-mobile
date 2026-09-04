@@ -18,19 +18,19 @@ class _HomeStatisticsState extends State<HomeStatistics> {
   @override
   void initState() {
     super.initState();
-    _creditStore.loadSampleData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _creditStore.loadSampleData();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    StockGlobal().setGlobalItems();
-    StockGlobal().setTotalInventoryValue();
-    double inventory = TotalInventoryValue().getInventoryValue();
     final theme = Theme.of(context);
 
     return ListenableBuilder(
-      listenable: Listenable.merge([_orderStore, _creditStore]),
+      listenable: Listenable.merge([_orderStore, _creditStore, StockGlobal()]),
       builder: (context, _) {
+        final inventory = StockGlobal().totalInventoryValue;
         final totalRevenue = _orderStore.totalRevenue;
         final orders = _orderStore.orderCount;
         final creditOutstanding = _creditStore.totalOutstanding;
@@ -76,7 +76,7 @@ class _HomeStatisticsState extends State<HomeStatistics> {
                       title: 'INVENTORY',
                       value: 'SLE ${inventory.toStringAsFixed(2)}',
                       color: theme.colorScheme.onSurface,
-                      info: '${GlobalItems.lists.length} Products',
+                      info: '${StockGlobal.items.length} Products',
                       infoColor: Colors.grey,
                       iconUrl: 'assets/icons/inventory.png',
                       iconColor: Colors.grey

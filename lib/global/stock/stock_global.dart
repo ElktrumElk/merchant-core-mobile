@@ -1,7 +1,14 @@
+import 'package:flutter/material.dart';
+import 'package:first_flutter_project/network/product_service.dart';
 import 'package:first_flutter_project/pages/stockpage/stock_page.dart';
 
-class StockGlobal {
+class StockGlobal extends ChangeNotifier {
+  static final StockGlobal _instance = StockGlobal._internal();
+  factory StockGlobal() => _instance;
+  StockGlobal._internal();
+
   static List<Product> items = [];
+  final ProductService _productService = ProductService();
 
   double get totalInventoryValue {
     return items.fold(0, (sum, item) => sum + (item.price * item.quantity));
@@ -12,25 +19,36 @@ class StockGlobal {
   }
 
   int get lowStock {
-    return items.where((item) => item.quantity > 0 && item.quantity < 15).length;
+    return items.where((item) => item.quantity > 0 && item.quantity < 10).length;
   }
 
   int get totalItems {
     return items.length;
   }
 
-  List<Product> get itemsList {
-    return items;
-  }
-  void setGlobalItems () {
-    GlobalItems().setList(items);
+  static Future<void> loadItems() async {
+    try {
+      items = await ProductService().getProducts();
+      StockGlobal().notifyListeners();
+    } catch (e) {
+      // Fallback to local storage if API fails or not logged in
+      items = await GlobalItems().loadListFromStorage();
+      StockGlobal().notifyListeners();
+    }
   }
 
-  void setTotalInventoryValue() {
-    TotalInventoryValue().setInventoryValue(totalInventoryValue);
+  static Future<void> saveItems() async {
+    await GlobalItems().setList(items);
+    StockGlobal().notifyListeners();
   }
 
-  void addItem(Product item) {
-    items.add(item);
+  Future<void> syncWithBackend() async {
+    try {
+      items = await _productService.getProducts();
+      await saveItems(); // Sync local cache
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Sync failed: $e');
+    }
   }
 }

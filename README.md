@@ -167,6 +167,7 @@ All persistent data uses `FlutterSecureStorage`:
 | `colorMode` | `"true"` / `"false"` | Dark mode preference |
 | `isLogin` | `"true"` / `"false"` | Login state flag |
 | `user_info` | JSON string | Cached user profile |
+| `user_product` | JSON string | Cached user products that has been added | 
 
 ---
 

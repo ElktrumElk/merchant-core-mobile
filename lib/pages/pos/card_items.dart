@@ -1,3 +1,4 @@
+import 'package:first_flutter_project/global/stock/stock_global.dart';
 import 'package:first_flutter_project/pages/pos/cart_panel.dart';
 import 'package:first_flutter_project/pages/stockpage/stock_page.dart';
 import 'package:flutter/material.dart';
@@ -10,14 +11,22 @@ class CardItems extends StatefulWidget {
 }
 
 class _CardItemState extends State<CardItems> {
-  final List<Product> itemsData = GlobalItems().getLists();
+  @override
+  void initState() {
+    super.initState();
+    // Ensure items are loaded if the list is currently empty
+    if (StockGlobal.items.isEmpty) {
+      StockGlobal.loadItems();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return ListenableBuilder(
-      listenable: AddItemsToCart(),
-      builder: (context, index) {
+      listenable: Listenable.merge([AddItemsToCart(), StockGlobal()]),
+      builder: (context, child) {
+        final itemsData = StockGlobal.items;
         return GridView.builder(
           itemCount: itemsData.length,
           shrinkWrap: true,
@@ -31,12 +40,14 @@ class _CardItemState extends State<CardItems> {
           ),
           itemBuilder: (context, index) {
             final product = itemsData[index];
+            bool isOutOfStock = product.quantity <= 0;
 
             return Card(
-              shape: Border.all(color: Theme.of(context).dividerColor),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: theme.dividerColor),
+              ),
               color: theme.cardColor,
-              borderOnForeground: true,
-
               elevation: 2,
               child: Padding(
                 padding: const EdgeInsets.all(10),
@@ -51,17 +62,18 @@ class _CardItemState extends State<CardItems> {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: 15,
                           color: theme.colorScheme.onSurface,
                         ),
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '\$${product.price}',
+                      'SLE ${product.price.toStringAsFixed(2)}',
                       style: const TextStyle(
                         color: Colors.green,
                         fontWeight: FontWeight.w600,
+                        fontSize: 13,
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -69,11 +81,9 @@ class _CardItemState extends State<CardItems> {
                       width: double.infinity,
                       height: 36,
                       child: FilledButton(
-                        onPressed: () {
-                          if (product.quantity <= 0) {
-                            itemsData[index].inStock = false;
-                            return;
-                          }
+                        onPressed: isOutOfStock
+                            ? null
+                            : () {
                           AddItemsToCart().addProduct(product);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
@@ -85,19 +95,17 @@ class _CardItemState extends State<CardItems> {
                           );
                         },
                         style: FilledButton.styleFrom(
-                          backgroundColor: product.quantity <= 0
+                          backgroundColor: isOutOfStock
                               ? Colors.grey
                               : Colors.black,
-                          disabledBackgroundColor: Colors.grey,
                           foregroundColor: Colors.white,
-
                           padding: EdgeInsets.zero,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
                         child: Text(
-                          product.quantity <= 0 ? "Out of stock" : "Add",
+                          isOutOfStock ? "Out of stock" : "Add",
                           style: const TextStyle(fontSize: 12),
                         ),
                       ),

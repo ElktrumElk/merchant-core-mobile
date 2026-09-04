@@ -1,5 +1,6 @@
 import 'package:first_flutter_project/global/credit_global.dart';
 import 'package:first_flutter_project/global/sales_global.dart';
+import 'package:first_flutter_project/network/pos_service.dart';
 import 'package:flutter/material.dart';
 import 'package:first_flutter_project/pages/stockpage/stock_page.dart';
 
@@ -61,6 +62,11 @@ class AddItemsToCart extends ChangeNotifier {
     _cartItems.clear();
     notifyListeners();
   }
+
+  void finalizeSale() {
+    _cartItems.clear();
+    notifyListeners();
+  }
 }
 
 class CartItem {
@@ -82,7 +88,6 @@ class CartPanel extends StatefulWidget {
 
 class _CartPanelState extends State<CartPanel> {
   final cart = AddItemsToCart();
-  final itemData = GlobalItems().getLists();
   final TextEditingController _creditNameCtrl = TextEditingController();
   final TextEditingController _creditDueCtrl = TextEditingController();
 
@@ -93,22 +98,41 @@ class _CartPanelState extends State<CartPanel> {
     super.dispose();
   }
 
-  void _cashCheckout(List<CartItem> cartList) {
-    final products = cartList.map((item) => item.product).toList();
-    OrderStore().addOrder(products, cart.totalPrice, label: 'Cash Sale');
-    cart.clearCart();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Cash order completed!'),
-        duration: Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+  void _cashCheckout(List<CartItem> cartList) async {
+    final products = List<Product>.from(cartList.map((item) => item.product));
+    final double total = cart.totalPrice;
+    
+    try {
+      // 1. Inform backend about the checkout
+      await PosService().checkout(cartList, total, 'cash');
+      
+      // 2. Update local order store
+      OrderStore().addOrder(products, total, label: 'Cash Sale');
+      
+      // 3. Clear cart without returning stock
+      cart.finalizeSale();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cash order completed!'),
+          duration: Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Checkout failed: $e')),
+      );
+    }
   }
 
-  void _creditCheckout(List<CartItem> cartList) {
+  void _creditCheckout(List<CartItem> cartList) async {
+    final products = List<Product>.from(cartList.map((item) => item.product));
+    final double total = cart.totalPrice;
+    
     _creditNameCtrl.clear();
     _creditDueCtrl.clear();
+    
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -136,20 +160,35 @@ class _CartPanelState extends State<CartPanel> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           FilledButton(
-            onPressed: () {
+            onPressed: () async {
               final name = _creditNameCtrl.text.trim();
               final due = _creditDueCtrl.text.trim();
               if (name.isEmpty || due.isEmpty) return;
-              CreditStore().addCreditUser(name, cart.totalPrice, due);
-              cart.clearCart();
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Credit added for $name'),
-                  duration: const Duration(seconds: 2),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
+              
+              try {
+                // 1. Inform backend about the checkout (as a credit sale)
+                await PosService().checkout(cartList, total, 'credit');
+                
+                // 2. Add to backend credit entries
+                await CreditStore().addCreditUser(name, total, due);
+                
+                // 3. Clear cart locally
+                cart.finalizeSale();
+                
+                if (mounted) Navigator.pop(ctx);
+                
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Credit sale completed for $name'),
+                    duration: const Duration(seconds: 2),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Credit checkout failed: $e')),
+                );
+              }
             },
             child: const Text('Add Credit'),
           ),

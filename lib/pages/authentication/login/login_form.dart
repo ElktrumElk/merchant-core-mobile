@@ -77,7 +77,7 @@ void _submit() async {
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: const Text('Connection Error'),
-          content: Text('Could not connect to server. Check your connection and try again. $e'),
+          content: Text('Could not connect to server. Check your connection and try again.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
