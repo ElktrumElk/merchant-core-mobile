@@ -1,5 +1,6 @@
 import 'package:first_flutter_project/network/market_service.dart';
 import 'package:first_flutter_project/pages/market/market_product_card.dart';
+import 'package:first_flutter_project/pages/market/service_card.dart';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -11,16 +12,25 @@ class MarketShopScreen extends StatefulWidget {
   State<MarketShopScreen> createState() => _MarketShopScreenState();
 }
 
-class _MarketShopScreenState extends State<MarketShopScreen> {
+class _MarketShopScreenState extends State<MarketShopScreen> with SingleTickerProviderStateMixin {
   final MarketService _marketService = MarketService();
   Map<String, dynamic>? _shop;
   List<Map<String, dynamic>> _products = [];
+  List<Map<String, dynamic>> _services = [];
   bool _isLoading = true;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _fetchShopData();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchShopData() async {
@@ -30,6 +40,7 @@ class _MarketShopScreenState extends State<MarketShopScreen> {
         setState(() {
           _shop = data;
           _products = List<Map<String, dynamic>>.from(data['products'] ?? []);
+          _services = List<Map<String, dynamic>>.from(data['services'] ?? []);
           _isLoading = false;
         });
       }
@@ -41,7 +52,7 @@ class _MarketShopScreenState extends State<MarketShopScreen> {
   void _shareShop() {
     if (_shop == null) return;
     final shopName = _shop!['shop_name'] ?? 'Shop';
-    final shopUrl = 'https://merchantcore.netlify.app/shop/${widget.shopId}';
+    final shopUrl = 'https://merchantcore.netlify.app/market/${widget.shopId}';
     Share.share('Check out $shopName on Merchant Core: $shopUrl');
   }
 
@@ -52,158 +63,212 @@ class _MarketShopScreenState extends State<MarketShopScreen> {
     if (_shop == null) return const Scaffold(body: Center(child: Text('Shop not found')));
 
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 240,
-            pinned: true,
-            leading: const BackButton(color: Colors.white),
-            flexibleSpace: FlexibleSpaceBar(
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  // Background Image
-                  Image.network(
-                    _shop!['background_image'] ?? 'https://via.placeholder.com/400x240',
-                    fit: BoxFit.cover,
-                  ),
-                  // Smoke Gradient Overlay
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withAlpha(50),
-                          theme.scaffoldBackgroundColor.withAlpha(255),
-                        ],
-                        stops: const [0.0, 0.6, 1.0],
-                      ),
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            SliverAppBar(
+              expandedHeight: 240,
+              pinned: true,
+              leading: const BackButton(color: Colors.white),
+              flexibleSpace: FlexibleSpaceBar(
+                background: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.network(
+                      _shop!['background_image'] ?? 'https://via.placeholder.com/400x240',
+                      fit: BoxFit.cover,
                     ),
-                  ),
-                  // Profile Image overlapping
-                  Positioned(
-                    bottom: 0,
-                    left: 20,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
+                    Container(
                       decoration: BoxDecoration(
-                        color: theme.cardColor,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(color: Colors.black.withAlpha(50), blurRadius: 10)
-                        ],
-                      ),
-                      child: CircleAvatar(
-                        radius: 40,
-                        backgroundImage: NetworkImage(_shop!['profile_image'] ?? ''),
-                        backgroundColor: Colors.grey.shade200,
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withAlpha(50),
+                            theme.scaffoldBackgroundColor.withAlpha(255),
+                          ],
+                          stops: const [0.0, 0.6, 1.0],
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                    Positioned(
+                      bottom: 0,
+                      left: 20,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: theme.cardColor,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(color: Colors.black.withAlpha(50), blurRadius: 10)
+                          ],
+                        ),
+                        child: CircleAvatar(
+                          radius: 40,
+                          backgroundImage: NetworkImage(_shop!['profile_image'] ?? ''),
+                          backgroundColor: Colors.grey.shade200,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _shop!['shop_name'] ?? '',
-                            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                          ),
-                          Row(
-                            children: [
-                              const Icon(Icons.star, color: Colors.amber, size: 18),
-                              Text(
-                                ' ${_shop!['rating'] ?? 0.0}',
-                                style: const TextStyle(fontWeight: FontWeight.w600),
-                              ),
-                              if (_shop!['verified'] == true) ...[
-                                const SizedBox(width: 8),
-                                const Icon(Icons.verified, color: Colors.blue, size: 18),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _shop!['shop_name'] ?? '',
+                              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                            ),
+                            Row(
+                              children: [
+                                const Icon(Icons.star, color: Colors.amber, size: 18),
+                                Text(
+                                  ' ${_shop!['rating'] ?? 0.0}',
+                                  style: const TextStyle(fontWeight: FontWeight.w600),
+                                ),
+                                if (_shop!['verified'] == true) ...[
+                                  const SizedBox(width: 8),
+                                  const Icon(Icons.verified, color: Colors.blue, size: 18),
+                                ],
                               ],
-                            ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FilledButton.icon(
+                            onPressed: () {},
+                            icon: const Icon(Icons.message_outlined),
+                            label: const Text('Message'),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: Colors.black,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  // Message and Share Buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: () {
-                            // Messaging logic placeholder
-                          },
-                          icon: const Icon(Icons.message_outlined),
-                          label: const Text('Message'),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: Colors.black,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        const SizedBox(width: 12),
+                        IconButton.filled(
+                          onPressed: _shareShop,
+                          icon: const Icon(Icons.share_outlined),
+                          style: IconButton.styleFrom(
+                            backgroundColor: theme.dividerColor.withAlpha(100),
+                            foregroundColor: theme.colorScheme.onSurface,
+                            padding: const EdgeInsets.all(12),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      IconButton.filled(
-                        onPressed: _shareShop,
-                        icon: const Icon(Icons.share_outlined),
-                        style: IconButton.styleFrom(
-                          backgroundColor: theme.dividerColor.withAlpha(100),
-                          foregroundColor: theme.colorScheme.onSurface,
-                          padding: const EdgeInsets.all(12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    _shop!['description'] ?? 'No description available.',
-                    style: TextStyle(color: theme.colorScheme.onSurface.withAlpha(200), height: 1.5),
-                  ),
-                  const Divider(height: 48),
-                  const Text(
-                    'Products',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 16),
-                ],
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      _shop!['description'] ?? 'No description available.',
+                      style: TextStyle(color: theme.colorScheme.onSurface.withAlpha(200), height: 1.5),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 0.8,
-              ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) => MarketProductCard(product: _products[index]),
-                childCount: _products.length,
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _SliverAppBarDelegate(
+                TabBar(
+                  controller: _tabController,
+                  labelColor: theme.colorScheme.primary,
+                  unselectedLabelColor: Colors.grey,
+                  indicatorColor: theme.colorScheme.primary,
+                  tabs: const [
+                    Tab(text: 'Products'),
+                    Tab(text: 'Services'),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 80)),
-        ],
+          ];
+        },
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            _buildProductsGrid(),
+            _buildServicesGrid(),
+          ],
+        ),
       ),
     );
+  }
+
+  Widget _buildProductsGrid() {
+    if (_products.isEmpty) {
+      return const Center(child: Text('No shop products available'));
+    }
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 0.8,
+      ),
+      itemCount: _products.length,
+      itemBuilder: (context, index) => MarketProductCard(product: _products[index]),
+    );
+  }
+
+  Widget _buildServicesGrid() {
+    if (_services.isEmpty) {
+      return const Center(child: Text('No shop services available'));
+    }
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1.1,
+      ),
+      itemCount: _services.length,
+      itemBuilder: (context, index) => ServiceCard(service: _services[index]),
+    );
+  }
+}
+
+class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
+  _SliverAppBarDelegate(this._tabBar);
+
+  final TabBar _tabBar;
+
+  @override
+  double get minExtent => _tabBar.preferredSize.height;
+  @override
+  double get maxExtent => _tabBar.preferredSize.height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: _tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
+    return false;
   }
 }

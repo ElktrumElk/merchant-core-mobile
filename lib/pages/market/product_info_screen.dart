@@ -16,7 +16,6 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
   final MarketService _marketService = MarketService();
   late Map<String, dynamic> _product;
   bool _isLoading = false;
-  double _userRating = 0;
 
   @override
   void initState() {
@@ -43,7 +42,7 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
   void _rateProduct(double rating) async {
     try {
       await _marketService.rateProduct(_product['id'], rating);
-      _fetchDetails(); // Refresh to show new average
+      _fetchDetails(); // Refresh to show new average and breakdown
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Thanks for rating!')),
@@ -62,96 +61,164 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final variants = _product['variants'] as List? ?? [];
+    final breakdown = Map<String, dynamic>.from(_product['rating_breakdown'] ?? {});
+    final totalRatings = _product['_rating_count'] ?? 0;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_product['name'] ?? 'Product Details'),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image Header
-            Hero(
-              tag: 'prod_${_product['id']}',
-              child: Image.network(
-                _product['image_url'] ?? 'https://via.placeholder.com/400',
-                width: double.infinity,
-                height: 300,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  height: 300,
-                  color: Colors.grey.shade200,
-                  child: const Icon(Icons.inventory, size: 100, color: Colors.grey),
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 350,
+            pinned: true,
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: IconButton.filled(
+                  onPressed: () {
+                    // Messaging logic
+                  },
+                  icon: const Icon(Icons.message_outlined),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.black87,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+            flexibleSpace: FlexibleSpaceBar(
+              background: Hero(
+                tag: 'prod_${_product['id']}',
+                child: Image.network(
+                  _product['image_url'] ?? 'https://via.placeholder.com/400',
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: Colors.grey.shade200,
+                    child: const Icon(Icons.inventory, size: 100, color: Colors.grey),
+                  ),
                 ),
               ),
             ),
-
-            Padding(
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                        child: Text(
-                          _product['name'] ?? '',
-                          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _product['name'] ?? '',
+                              style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 4),
+                            GestureDetector(
+                              onTap: () {
+                                if (_product['shop_id'] != null) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => MarketShopScreen(shopId: _product['shop_id']),
+                                    ),
+                                  );
+                                }
+                              },
+                              child: Text(
+                                'By ${_product['shop_name'] ?? 'Official Store'}',
+                                style: TextStyle(
+                                  color: Colors.blue.shade700,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       Text(
                         'SLE ${_product['price']}',
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.green),
+                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.green),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Sold by: ${_product['shop_name'] ?? 'Official Store'}',
-                    style: TextStyle(color: Colors.blue.shade700, fontWeight: FontWeight.w600),
-                  ),
+                  
+                  const SizedBox(height: 24),
+                  const Text('Ratings & Reviews', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
                   
-                  // Rating Display
+                  // Rating Breakdown
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.star, color: Colors.amber, size: 24),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${_product['rating'] ?? 0.0}',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      Column(
+                        children: [
+                          Text(
+                            '${_product['rating'] ?? 0.0}',
+                            style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+                          ),
+                          const Icon(Icons.star, color: Colors.amber, size: 28),
+                          Text('$totalRatings ratings', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '(${_product['_rating_count'] ?? 0} reviews)',
-                        style: TextStyle(color: Colors.grey.shade600),
+                      const SizedBox(width: 32),
+                      Expanded(
+                        child: Column(
+                          children: [5, 4, 3, 2, 1].map((star) {
+                            final count = breakdown[star.toString()] ?? 0;
+                            final progress = totalRatings > 0 ? count / totalRatings : 0.0;
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 2),
+                              child: Row(
+                                children: [
+                                  Text('$star', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: LinearProgressIndicator(
+                                      value: progress.toDouble(),
+                                      backgroundColor: Colors.grey.shade200,
+                                      color: Colors.amber,
+                                      minHeight: 8,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ),
                       ),
                     ],
                   ),
 
-                  const Divider(height: 40),
+                  const Divider(height: 48),
 
                   const Text(
-                    'Description',
+                    'Product Description',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   Text(
                     _product['description'] ?? 'No description available for this product.',
-                    style: TextStyle(color: Colors.grey.shade800, height: 1.5),
+                    style: TextStyle(color: Colors.grey.shade800, height: 1.6, fontSize: 15),
                   ),
 
                   if (variants.isNotEmpty) ...[
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 32),
                     const Text(
                       'Available Variants',
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 12),
                     SizedBox(
-                      height: 50,
+                      height: 45,
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
                         itemCount: variants.length,
@@ -159,15 +226,16 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
                           final v = variants[index];
                           return Container(
                             margin: const EdgeInsets.only(right: 12),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
                             decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(10),
                               border: Border.all(color: Colors.grey.shade300),
-                              borderRadius: BorderRadius.circular(8),
                             ),
                             child: Center(
                               child: Text(
                                 '${v['size'] ?? ''} ${v['color'] ?? ''}'.trim(),
-                                style: const TextStyle(fontWeight: FontWeight.w500),
+                                style: const TextStyle(fontWeight: FontWeight.w600),
                               ),
                             ),
                           );
@@ -176,30 +244,32 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
                     ),
                   ],
 
-                  const Divider(height: 60),
+                  const Divider(height: 64),
 
-                  // Rating Panel
-                  const Text(
-                    'Rate this Product',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  // Rating Input
+                  const Center(
+                    child: Text(
+                      'How would you rate this product?',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(5, (index) {
                       return IconButton(
                         onPressed: () => _rateProduct(index + 1.0),
+                        iconSize: 40,
                         icon: Icon(
                           index < (_product['rating'] ?? 0).floor()
                               ? Icons.star
                               : Icons.star_border,
                           color: Colors.amber,
-                          size: 36,
                         ),
                       );
                     }),
                   ),
-                  const SizedBox(height: 100), // Space for bottom buttons
+                  const SizedBox(height: 120), // Space for bottom buttons
                 ],
               ),
             ),
@@ -209,8 +279,9 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
       bottomSheet: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: theme.scaffoldBackgroundColor,
-          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -5))],
+          color: theme.cardColor,
+          border: Border(top: BorderSide(color: theme.dividerColor)),
+          boxShadow: [BoxShadow(color: Colors.black.withAlpha(20), blurRadius: 10, offset: const Offset(0, -5))],
         ),
         child: Row(
           children: [
@@ -230,7 +301,7 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
                 label: const Text('Visit Shop'),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  side: const BorderSide(color: Colors.black),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
             ),
@@ -238,7 +309,6 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
             Expanded(
               child: FilledButton.icon(
                 onPressed: () {
-                  // Re-use POS Product model if possible
                   final p = Product(
                     id: _product['id'],
                     name: _product['name'],
@@ -256,6 +326,7 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   backgroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
             ),
