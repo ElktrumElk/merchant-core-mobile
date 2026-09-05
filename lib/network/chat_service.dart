@@ -146,6 +146,10 @@ class ChatService {
   final _storage = const FlutterSecureStorage();
 
   static const _kPrivateKey = 'chat_private_key';
+  static const _kThreadsCache = 'chat_threads_cache';
+  static const _kLastMessagesCache = 'chat_last_messages_cache';
+  static const _kShopImagesCache = 'chat_shop_images';
+  static const _kParticipantKey = 'chat_participant_key';
   static const zeroKeyB64 = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=';
 
   static final ChatService _instance = ChatService._internal();
@@ -160,6 +164,9 @@ class ChatService {
 
   Future<String> initChatEncryption() async {
     final participantKey = await _resolveParticipantKey();
+    try {
+      await _storage.write(key: _kParticipantKey, value: participantKey);
+    } catch (_) {}
     final keyData = await _loadOrCreateKeyData();
     await _registerKeyIfNeeded(participantKey, keyData.publicKeyPem);
     return participantKey;
@@ -291,10 +298,16 @@ class ChatService {
     return utf8.decode(clear);
   }
 
-  Future<void> sendMessage(
+  Future<Map<String, dynamic>?> sendMessage(
     String threadId,
     String text, {
     Map<String, dynamic>? thread,
+    String messageType = 'text',
+    String messageImageUrl = '',
+    String productId = '',
+    String oldPrice = '',
+    String newPrice = '',
+    String discountLink = '',
   }) async {
     final threadKey = await resolveThreadKey(thread);
     final token = await TokenStorage.loadToken();
@@ -306,12 +319,23 @@ class ChatService {
       body: jsonEncode({
         "text": text,
         "thread_key": threadKey,
-        "message-type": "text",
+        "message-type": messageType,
+        "message-img-url": messageImageUrl,
+        "product-id": productId,
+        "old-price": oldPrice,
+        "new-price": newPrice,
+        "discount-link": discountLink,
       }),
     );
 
     if (response.statusCode != 200) {
       throw Exception('Failed to send message: ${response.body}');
+    }
+    try {
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      return body['message'] as Map<String, dynamic>?;
+    } catch (_) {
+      return null;
     }
   }
 
@@ -327,10 +351,38 @@ class ChatService {
 
     if (response.statusCode == 200) {
       final body = jsonDecode(response.body) as Map<String, dynamic>;
-      return List<Map<String, dynamic>>.from(body['threads'] ?? []);
+      final threads = List<Map<String, dynamic>>.from(body['threads'] ?? []);
+      final apiImages = <String, String>{
+        for (final t in threads)
+          if (t['shop_id'] != null &&
+              t['shop_image'] != null &&
+              (t['shop_image'] as String).isNotEmpty)
+            (t['shop_id'] as String).toString(): (t['shop_image'] as String),
+      };
+      if (apiImages.isNotEmpty) await _saveShopImageMap(apiImages);
+      final hydrated = await hydrateThreadsWithShopImages(threads);
+      await _saveThreadsCache(hydrated);
+      return hydrated;
     } else {
       throw Exception('Failed to load chat threads');
     }
+  }
+
+  Future<List<Map<String, dynamic>>?> loadCachedThreads() async {
+    try {
+      final saved = await _storage.read(key: _kThreadsCache);
+      if (saved == null || saved.isEmpty) return null;
+      final list = jsonDecode(saved) as List<dynamic>;
+      return List<Map<String, dynamic>>.from(list);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _saveThreadsCache(List<Map<String, dynamic>> threads) async {
+    try {
+      await _storage.write(key: _kThreadsCache, value: jsonEncode(threads));
+    } catch (_) {}
   }
 
   Future<Map<String, dynamic>> getMessages(String threadId) async {
@@ -349,8 +401,133 @@ class ChatService {
     }
   }
 
+  Future<void> markThreadRead(String threadId) async {
+    final token = await TokenStorage.loadToken();
+    if (token == null || token.isEmpty) return;
+    final url = Uri.parse('$_base/api/v1/chat/threads/$threadId/read');
+    try {
+      await http.post(url, headers: SecreteData(token).getHeaders());
+    } catch (_) {}
+  }
+
+  Future<int> unreadCountFor(Map<String, dynamic> thread) async {
+    var key = _participantKey;
+    if (key == null || key.isEmpty) {
+      try {
+        key = await _storage.read(key: _kParticipantKey);
+      } catch (_) {}
+    }
+    final isOrg = (key ?? '').startsWith('org:');
+    return isOrg
+        ? (thread['unread_owner'] as num?)?.toInt() ?? 0
+        : (thread['unread_buyer'] as num?)?.toInt() ?? 0;
+  }
+
+  Future<Map<String, Map<String, dynamic>>> loadLastMessages() async {
+    try {
+      final saved = await _storage.read(key: _kLastMessagesCache);
+      if (saved == null || saved.isEmpty) return {};
+      final map = jsonDecode(saved) as Map<String, dynamic>;
+      return map.map((k, v) =>
+          MapEntry(k, Map<String, dynamic>.from(v as Map)));
+    } catch (_) {
+      return {};
+    }
+  }
+
+  Future<void> saveLastMessage(
+      String threadId, Map<String, dynamic> preview) async {
+    final map = await loadLastMessages();
+    if (preview['text'] == null ||
+        (preview['text'] as String).trim().isEmpty) {
+      map.remove(threadId);
+    } else {
+      map[threadId] = preview;
+    }
+    try {
+      await _storage.write(key: _kLastMessagesCache, value: jsonEncode(map));
+    } catch (_) {}
+  }
+
+  Future<void> saveLastMessages(
+      Map<String, Map<String, dynamic>> map) async {
+    try {
+      await _storage.write(key: _kLastMessagesCache, value: jsonEncode(map));
+    } catch (_) {}
+  }
+
+  Future<Map<String, dynamic>?> fetchLastMessagePreview(
+      Map<String, dynamic> thread) async {
+    try {
+      final threadKey = await resolveThreadKey(thread);
+      final response = await getMessages(thread['id']);
+      final messages =
+          List<Map<String, dynamic>>.from(response['messages'] ?? []);
+      if (messages.isEmpty) return null;
+      final last = messages.last;
+      final ciphertext = last['ciphertext'] as String? ?? '';
+      final iv = last['iv'] as String? ?? '';
+      if (ciphertext.isEmpty) return null;
+      final text =
+          await decryptPayload(threadKey, ciphertext, iv);
+      return {
+        'text': text,
+        'sent_at': last['sent_at'],
+        'message_type': last['message_type'] ?? 'text',
+      };
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<Map<String, String>> loadShopImages() async =>
+      await _loadShopImageMap();
+
+  Future<void> saveShopImage(String shopId, String url) async {
+    if (shopId.isEmpty || url.isEmpty) return;
+    final map = await _loadShopImageMap();
+    map[shopId] = url;
+    await _saveShopImageMap(map);
+  }
+
+  Future<Map<String, String>> _loadShopImageMap() async {
+    try {
+      final saved = await _storage.read(key: _kShopImagesCache);
+      if (saved == null || saved.isEmpty) return {};
+      final map = jsonDecode(saved) as Map<String, dynamic>;
+      return map.map((k, v) => MapEntry(k, v.toString()));
+    } catch (_) {
+      return {};
+    }
+  }
+
+  Future<void> _saveShopImageMap(Map<String, String> map) async {
+    try {
+      await _storage.write(key: _kShopImagesCache, value: jsonEncode(map));
+    } catch (_) {}
+  }
+
+  Future<List<Map<String, dynamic>>> hydrateThreadsWithShopImages(
+      List<Map<String, dynamic>> threads) async {
+    final images = await _loadShopImageMap();
+    if (images.isEmpty) return threads;
+    return threads.map((t) {
+      if (t['shop_id'] == null) return t;
+      final url = images[t['shop_id']];
+      if (url == null || url.isEmpty) return t;
+      final copy = Map<String, dynamic>.from(t);
+      copy['shop_image'] = url;
+      return copy;
+    }).toList();
+  }
+
+  Future<void> persistThreadsCache(List<Map<String, dynamic>> threads) async {
+    await _saveThreadsCache(threads);
+  }
+
   Future<void> createThread(
-      String shopId, String shopName, String ownerKey) async {
+    String shopId, String shopName, String ownerKey,
+    {String shopImage = ''}) async {
     await initChatEncryption();
     final token = await TokenStorage.loadToken();
     final url = Uri.parse('$_base/api/v1/chat/threads');
@@ -362,11 +539,15 @@ class ChatService {
         "shop_id": shopId,
         "shop_name": shopName,
         "owner_key": ownerKey,
+        "shop_image": shopImage,
       }),
     );
 
     if (response.statusCode != 200) {
       throw Exception('Failed to start chat thread: ${response.body}');
+    }
+    if (shopImage.isNotEmpty) {
+      await saveShopImage(shopId, shopImage);
     }
   }
 
@@ -380,12 +561,27 @@ class ChatService {
     if (response.statusCode != 200 && response.statusCode != 204) {
       throw Exception('Failed to delete thread: ${response.body}');
     }
+    final cached = await loadCachedThreads();
+    if (cached != null) {
+      cached.removeWhere((t) => t['id'] == threadId);
+      await _saveThreadsCache(cached);
+    }
+    final previews = await loadLastMessages();
+    if (previews.remove(threadId) != null) {
+      await saveLastMessages(previews);
+    }
   }
+
+  String? get participantKey => _participantKey;
 
   Future<void> wipeKeys() async {
     _participantKey = null;
     _keyData = null;
     _threadKeyCache.clear();
     await _storage.delete(key: _kPrivateKey);
+    await _storage.delete(key: _kThreadsCache);
+    await _storage.delete(key: _kLastMessagesCache);
+    await _storage.delete(key: _kShopImagesCache);
+    await _storage.delete(key: _kParticipantKey);
   }
 }

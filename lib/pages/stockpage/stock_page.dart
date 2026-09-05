@@ -150,16 +150,13 @@ class _StockPageState extends State<StockPage> {
       context: context,
       backgroundColor: theme.cardColor,
       builder: (context) {
-
         return Container(
-          constraints: const BoxConstraints(
-            maxHeight: 600
-          ),
+          constraints: const BoxConstraints(maxHeight: 600),
           padding: EdgeInsets.only(
             right: 10,
             left: 10,
             top: 10,
-            bottom: MediaQuery.of(context).viewInsets.bottom
+            bottom: MediaQuery.of(context).viewInsets.bottom,
           ),
           child: ListView(
             children: [
@@ -235,7 +232,10 @@ class _StockPageState extends State<StockPage> {
                     decoration: InputDecoration(
                       hintText: 'Milk',
                       labelText: 'Product Name',
-                      icon: Icon(Icons.shopping_bag, color: theme.colorScheme.onSurface),
+                      icon: Icon(
+                        Icons.shopping_bag,
+                        color: theme.colorScheme.onSurface,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -245,7 +245,10 @@ class _StockPageState extends State<StockPage> {
                     decoration: InputDecoration(
                       hintText: 'SKU123',
                       labelText: 'SKU',
-                      icon: Icon(Icons.qr_code, color: theme.colorScheme.onSurface),
+                      icon: Icon(
+                        Icons.qr_code,
+                        color: theme.colorScheme.onSurface,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -255,7 +258,10 @@ class _StockPageState extends State<StockPage> {
                     decoration: InputDecoration(
                       hintText: 'Dairy',
                       labelText: 'Category',
-                      icon: Icon(Icons.category, color: theme.colorScheme.onSurface),
+                      icon: Icon(
+                        Icons.category,
+                        color: theme.colorScheme.onSurface,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -266,7 +272,10 @@ class _StockPageState extends State<StockPage> {
                     decoration: InputDecoration(
                       hintText: 'Quantity: 1',
                       labelText: 'Quantity',
-                      icon: Icon(Icons.inventory, color: theme.colorScheme.onSurface),
+                      icon: Icon(
+                        Icons.inventory,
+                        color: theme.colorScheme.onSurface,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -277,7 +286,10 @@ class _StockPageState extends State<StockPage> {
                     decoration: InputDecoration(
                       hintText: 'Price: 1.00',
                       labelText: 'Price',
-                      icon: Icon(Icons.attach_money, color: theme.colorScheme.onSurface),
+                      icon: Icon(
+                        Icons.attach_money,
+                        color: theme.colorScheme.onSurface,
+                      ),
                     ),
                   ),
                 ],
@@ -289,9 +301,15 @@ class _StockPageState extends State<StockPage> {
     );
   }
 
-  void _addItem(String name, int quantity, double price, String sku, String category) async {
+  void _addItem(
+    String name,
+    int quantity,
+    double price,
+    String sku,
+    String category,
+  ) async {
     final newProduct = Product(
-      id: '', 
+      id: '',
       name: name,
       price: price,
       quantity: quantity,
@@ -308,8 +326,15 @@ class _StockPageState extends State<StockPage> {
     }
   }
 
-  void _updateItem(String id, String name, int quantity, double price, String sku, String category) async {
-     try {
+  void _updateItem(
+    String id,
+    String name,
+    int quantity,
+    double price,
+    String sku,
+    String category,
+  ) async {
+    try {
       await ProductService().updateProduct(id, {
         "name": name,
         "stock": quantity,
@@ -334,129 +359,152 @@ class _StockPageState extends State<StockPage> {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: StockGlobal(),
-      builder: (context, _) {
-        int totalItems = StockGlobal().totalItems;
-        int outOfStock = StockGlobal().outOfStock;
-        int lowStock = StockGlobal().lowStock;
-        double totalValue = StockGlobal().totalInventoryValue;
-        final theme = Theme.of(context);
-        final isDark = theme.brightness == Brightness.dark;
+    return Scaffold(
+      body: ListenableBuilder(
+        listenable: StockGlobal(),
+        builder: (context, _) {
+          int totalItems = StockGlobal().totalItems;
+          int outOfStock = StockGlobal().outOfStock;
+          int lowStock = StockGlobal().lowStock;
+          double totalValue = StockGlobal().totalInventoryValue;
+          final theme = Theme.of(context);
+          final isDark = theme.brightness == Brightness.dark;
 
-        return ListView(
-          children: [
-            const GreetingCard(
-              title: 'Stocks',
-              message: 'Here is what happening on stocks',
-            ),
-            StockStatistics(
-              totalItems: totalItems,
-              lowStock: lowStock,
-              totalValue: totalValue,
-              outOfStock: outOfStock,
-            ),
-            const SizedBox(height: 10),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 1),
-              padding: const EdgeInsets.all(10),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: SearchBar(
-                      onChanged: (query) => _searchFilter(query),
-                      hintText: 'Search products...',
-                      leading: const Icon(Icons.search),
-                      backgroundColor: WidgetStateProperty.all(theme.cardColor),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  IconButton.filled(
-                    onPressed: () {
-                      typeEdit = 'add';
-                      _showAddModal(context);
-                    },
-                    icon: const Icon(Icons.add),
-                  ),
-                ],
+          return ListView(
+            children: [
+              const GreetingCard(
+                title: 'Stocks',
+                message: 'Here is what happening on stocks',
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
+              StockStatistics(
+                totalItems: totalItems,
+                lowStock: lowStock,
+                totalValue: totalValue,
+                outOfStock: outOfStock,
+              ),
+              const SizedBox(height: 10),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 1),
+                padding: const EdgeInsets.all(10),
                 child: Row(
-                  children: ['All', 'In Stock', 'Low Stock', 'Out of Stock'].map((label) {
-                    final selected = _stockFilter == label;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        label: Text(label),
-                        selected: selected,
-                        onSelected: (_) => setState(() => _stockFilter = label),
-                        selectedColor: const Color(0xFF1565C0),
-                        labelStyle: TextStyle(
-                          color: selected ? Colors.white : theme.colorScheme.onSurface,
+                  children: [
+                    Expanded(
+                      child: SearchBar(
+                        onChanged: (query) => _searchFilter(query),
+                        hintText: 'Search products...',
+                        leading: const Icon(Icons.search),
+                        backgroundColor: WidgetStateProperty.all(
+                          theme.cardColor,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    IconButton.filled(
+                      onPressed: () {
+                        typeEdit = 'add';
+                        _showAddModal(context);
+                      },
+                      icon: const Icon(Icons.add),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: ['All', 'In Stock', 'Low Stock', 'Out of Stock']
+                        .map((label) {
+                          final selected = _stockFilter == label;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: ChoiceChip(
+                              label: Text(label),
+                              selected: selected,
+                              onSelected: (_) =>
+                                  setState(() => _stockFilter = label),
+                              selectedColor: const Color(0xFF1565C0),
+                              labelStyle: TextStyle(
+                                color: selected
+                                    ? Colors.white
+                                    : theme.colorScheme.onSurface,
+                              ),
+                            ),
+                          );
+                        })
+                        .toList(),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              if (_searchedItems.isEmpty)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(20.0),
+                    child: Text('No products found.'),
+                  ),
+                )
+              else
+                ListView.builder(
+                  itemCount: _searchedItems.length,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemBuilder: (context, index) {
+                    final product = _searchedItems[index];
+                    bool isLow = product.quantity >= 1 && product.quantity < 10;
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          child: Text(
+                            product.name.isNotEmpty ? product.name[0] : '?',
+                          ),
+                        ),
+                        title: Text(
+                          product.name,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text(
+                          'Stock: ${product.quantity} | Price: SLE ${product.price.toStringAsFixed(2)}',
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit_outlined),
+                              onPressed: () {
+                                typeEdit = 'edit';
+                                editItemId = product.id;
+                                productName.text = product.name;
+                                productPrice.text = product.price.toString();
+                                productQuantity.text = product.quantity
+                                    .toString();
+                                productSku.text = product.sku;
+                                productCategory.text = product.category;
+                                _showAddModal(context);
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.delete_outline,
+                                color: Colors.red,
+                              ),
+                              onPressed: () => _deleteItem(product.id),
+                            ),
+                          ],
                         ),
                       ),
                     );
-                  }).toList(),
+                  },
                 ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            if (_searchedItems.isEmpty)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(20.0),
-                  child: Text('No products found.'),
-                ),
-              )
-            else
-              ListView.builder(
-                itemCount: _searchedItems.length,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemBuilder: (context, index) {
-                  final product = _searchedItems[index];
-                  bool isLow = product.quantity >= 1 && product.quantity < 10;
-                  return Card(
-                    margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        child: Text(product.name.isNotEmpty ? product.name[0] : '?'),
-                      ),
-                      title: Text(product.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text('Stock: ${product.quantity} | Price: SLE ${product.price.toStringAsFixed(2)}'),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.edit_outlined),
-                            onPressed: () {
-                              typeEdit = 'edit';
-                              editItemId = product.id;
-                              productName.text = product.name;
-                              productPrice.text = product.price.toString();
-                              productQuantity.text = product.quantity.toString();
-                              productSku.text = product.sku;
-                              productCategory.text = product.category;
-                              _showAddModal(context);
-                            },
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline, color: Colors.red),
-                            onPressed: () => _deleteItem(product.id),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-          ],
-        );
-      },
+            ],
+          );
+        },
+      ),
     );
   }
 }

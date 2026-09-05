@@ -1,9 +1,8 @@
+import 'package:first_flutter_project/global/market_cart.dart';
 import 'package:first_flutter_project/network/chat_service.dart';
 import 'package:first_flutter_project/network/market_service.dart';
 import 'package:first_flutter_project/pages/chat/chat_thread_screen.dart';
 import 'package:first_flutter_project/pages/market/market_shop_screen.dart';
-import 'package:first_flutter_project/pages/pos/cart_panel.dart';
-import 'package:first_flutter_project/pages/stockpage/stock_page.dart';
 import 'package:flutter/material.dart';
 
 class ProductInfoScreen extends StatefulWidget {
@@ -19,6 +18,7 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
   final ChatService _chatService = ChatService();
   late Map<String, dynamic> _product;
   bool _isLoading = false;
+  bool _isChatLoading = false;
 
   @override
   void initState() {
@@ -45,33 +45,44 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
   void _startChat() async {
     final shopId = _product['shop_id'];
     final shopName = _product['shop_name'] ?? 'Official Store';
-    
+
     if (shopId == null) return;
+
+    setState(() => _isChatLoading = true);
 
     try {
       // Fetch shop details to get the owner key
       final shop = await _marketService.getShop(shopId);
       final ownerId = (shop['owner_id'] ?? shop['org_id'] ?? '').toString();
       final ownerKey = ownerId.startsWith('org:') ? ownerId : 'org:$ownerId';
+      final shopImage = (shop['profile_image'] ?? '').toString();
 
-      await _chatService.createThread(shopId, shopName, ownerKey);
-      
-      // Navigate to chat list or specific thread? 
+      await _chatService.createThread(
+        shopId,
+        shopName,
+        ownerKey,
+        shopImage: shopImage,
+      );
+
+      // Navigate to chat list or specific thread?
       // For simplicity, we navigate to the thread screen by finding the new thread
       final threads = await _chatService.getThreads();
       final thread = threads.firstWhere((t) => t['shop_id'] == shopId);
-      
+
       if (mounted) {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => ChatThreadScreen(thread: thread)),
-        );
+        ).then((_) {
+          if (mounted) setState(() => _isChatLoading = false);
+        });
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not start chat: $e')),
-        );
+        setState(() => _isChatLoading = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Could not start chat: $e')));
       }
     }
   }
@@ -81,9 +92,9 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
       await _marketService.rateProduct(_product['id'], rating);
       _fetchDetails(); // Refresh to show new average and breakdown
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Thanks for rating!')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Thanks for rating!')));
       }
     } catch (e) {
       if (mounted) {
@@ -98,7 +109,9 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final variants = _product['variants'] as List? ?? [];
-    final breakdown = Map<String, dynamic>.from(_product['rating_breakdown'] ?? {});
+    final breakdown = Map<String, dynamic>.from(
+      _product['rating_breakdown'] ?? {},
+    );
     final totalRatings = _product['_rating_count'] ?? 0;
 
     return Scaffold(
@@ -112,8 +125,17 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
                 Padding(
                   padding: const EdgeInsets.only(right: 12),
                   child: IconButton.filled(
-                    onPressed: _startChat,
-                    icon: const Icon(Icons.message_outlined),
+                    onPressed: _isChatLoading ? null : _startChat,
+                    icon: _isChatLoading
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.message_outlined),
                     style: IconButton.styleFrom(
                       backgroundColor: Colors.black87,
                       foregroundColor: Colors.white,
@@ -130,7 +152,11 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Container(
                     color: Colors.grey.shade200,
-                    child: const Icon(Icons.inventory, size: 100, color: Colors.grey),
+                    child: const Icon(
+                      Icons.inventory,
+                      size: 100,
+                      color: Colors.grey,
+                    ),
                   ),
                 ),
               ),
@@ -152,7 +178,10 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
                           children: [
                             Text(
                               _product['name'] ?? '',
-                              style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             const SizedBox(height: 4),
                             GestureDetector(
@@ -161,7 +190,9 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) => MarketShopScreen(shopId: _product['shop_id']),
+                                      builder: (_) => MarketShopScreen(
+                                        shopId: _product['shop_id'],
+                                      ),
                                     ),
                                   );
                                 }
@@ -181,12 +212,19 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
                       ),
                       Text(
                         'SLE ${_product['price']}',
-                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.green),
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 24),
-                  const Text('Ratings & Reviews', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const Text(
+                    'Ratings & Reviews',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 16),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -195,10 +233,19 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
                         children: [
                           Text(
                             '${_product['rating'] ?? 0.0}',
-                            style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              fontSize: 48,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           const Icon(Icons.star, color: Colors.amber, size: 28),
-                          Text('$totalRatings ratings', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                          Text(
+                            '$totalRatings ratings',
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 12,
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(width: 32),
@@ -206,12 +253,19 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
                         child: Column(
                           children: [5, 4, 3, 2, 1].map((star) {
                             final count = breakdown[star.toString()] ?? 0;
-                            final progress = totalRatings > 0 ? count / totalRatings : 0.0;
+                            final progress = totalRatings > 0
+                                ? count / totalRatings
+                                : 0.0;
                             return Padding(
                               padding: const EdgeInsets.symmetric(vertical: 2),
                               child: Row(
                                 children: [
-                                  Text('$star', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  Text(
+                                    '$star',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: LinearProgressIndicator(
@@ -237,14 +291,22 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    _product['description'] ?? 'No description available for this product.',
-                    style: TextStyle(color: Colors.grey.shade800, height: 1.6, fontSize: 15),
+                    _product['description'] ??
+                        'No description available for this product.',
+                    style: TextStyle(
+                      color: Colors.grey.shade800,
+                      height: 1.6,
+                      fontSize: 15,
+                    ),
                   ),
                   if (variants.isNotEmpty) ...[
                     const SizedBox(height: 32),
                     const Text(
                       'Available Variants',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     SizedBox(
@@ -265,7 +327,9 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
                             child: Center(
                               child: Text(
                                 '${v['size'] ?? ''} ${v['color'] ?? ''}'.trim(),
-                                style: const TextStyle(fontWeight: FontWeight.w600),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           );
@@ -277,7 +341,10 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
                   const Center(
                     child: Text(
                       'How would you rate this product?',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -308,7 +375,13 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
         decoration: BoxDecoration(
           color: theme.cardColor,
           border: Border(top: BorderSide(color: theme.dividerColor)),
-          boxShadow: [BoxShadow(color: Colors.black.withAlpha(20), blurRadius: 10, offset: const Offset(0, -5))],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(20),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -319,7 +392,8 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => MarketShopScreen(shopId: _product['shop_id']),
+                        builder: (_) =>
+                            MarketShopScreen(shopId: _product['shop_id']),
                       ),
                     );
                   }
@@ -328,7 +402,9 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
                 label: const Text('Visit Shop'),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ),
@@ -336,24 +412,31 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
             Expanded(
               child: FilledButton.icon(
                 onPressed: () {
-                  final p = Product(
-                    id: _product['id'],
-                    name: _product['name'],
-                    price: (_product['price'] as num).toDouble(),
-                    quantity: 1,
-                    inStock: true,
+                  MarketCart().addItem(
+                    MarketCartItem(
+                      productId: _product['id'].toString(),
+                      sourceId: _product['source_id']?.toString(),
+                      name: _product['name'] ?? 'Product',
+                      price: (_product['price'] as num?)?.toDouble() ?? 0,
+                      imageUrl: _product['image_url']?.toString(),
+                      shopId: _product['shop_id']?.toString() ?? '',
+                      shopName: _product['shop_name']?.toString() ?? 'Shop',
+                    ),
                   );
-                  AddItemsToCart().addProduct(p);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Added to cart!')),
-                  );
+                  ScaffoldMessenger.of(context)
+                    ..hideCurrentSnackBar()
+                    ..showSnackBar(
+                      const SnackBar(content: Text('Added to cart!')),
+                    );
                 },
                 icon: const Icon(Icons.shopping_cart),
                 label: const Text('Add to Cart'),
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   backgroundColor: Colors.black,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ),

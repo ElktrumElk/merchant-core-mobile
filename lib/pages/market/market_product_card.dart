@@ -1,9 +1,35 @@
+import 'package:first_flutter_project/global/market_cart.dart';
 import 'package:first_flutter_project/pages/market/product_info_screen.dart';
 import 'package:flutter/material.dart';
 
 class MarketProductCard extends StatelessWidget {
   final Map<String, dynamic> product;
   const MarketProductCard({super.key, required this.product});
+
+  void _addToCart(BuildContext context) {
+    if (product['in_stock'] == false) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(content: Text('This product is out of stock')),
+        );
+      return;
+    }
+    MarketCart().addItem(
+      MarketCartItem(
+        productId: product['id'].toString(),
+        sourceId: product['source_id']?.toString(),
+        name: product['name'] ?? 'Product',
+        price: (product['price'] as num?)?.toDouble() ?? 0,
+        imageUrl: product['image_url']?.toString(),
+        shopId: product['shop_id']?.toString() ?? '',
+        shopName: product['shop_name']?.toString() ?? 'Shop',
+      ),
+    );
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(const SnackBar(content: Text('Added to cart')));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +56,9 @@ class MarketProductCard extends StatelessWidget {
           children: [
             Expanded(
               child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
                 child: SizedBox(
                   width: double.infinity,
                   child: (imageUrl != null && imageUrl.isNotEmpty)
@@ -46,9 +74,10 @@ class MarketProductCard extends StatelessWidget {
                               return Center(
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  value: loadingProgress.expectedTotalBytes != null
+                                  value:
+                                      loadingProgress.expectedTotalBytes != null
                                       ? loadingProgress.cumulativeBytesLoaded /
-                                          loadingProgress.expectedTotalBytes!
+                                            loadingProgress.expectedTotalBytes!
                                       : null,
                                 ),
                               );
@@ -68,7 +97,10 @@ class MarketProductCard extends StatelessWidget {
                     product['name'] ?? 'Product',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Row(
@@ -90,9 +122,26 @@ class MarketProductCard extends StatelessWidget {
                     children: [
                       Text(
                         'SLE ${product['price'] ?? '0.00'}',
-                        style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          color: Colors.green,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      const Icon(Icons.add_shopping_cart, size: 18, color: Colors.blue),
+                      GestureDetector(
+                        onTap: () => _addToCart(context),
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary.withAlpha(18),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            Icons.add_shopping_cart,
+                            size: 18,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ],

@@ -31,7 +31,10 @@ class _CreditLedgerState extends State<CreditLedger> {
         title: const Text('Delete User'),
         content: Text('Remove ${user.name} from credit list?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () {
               _creditStore.deleteUser(user.id);
@@ -49,87 +52,94 @@ class _CreditLedgerState extends State<CreditLedger> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return ListenableBuilder(
-      listenable: _creditStore,
-      builder: (context, _) {
-        final users = _creditStore.users;
+    return Scaffold(
+      body: ListenableBuilder(
+        listenable: _creditStore,
+        builder: (context, _) {
+          final users = _creditStore.users;
 
-        return ListView(
-          children: [
-            const GreetingCard(
-              title: 'Credit',
-              message: 'Get Insight of your credit',
-            ),
-            Container(
-              padding: const EdgeInsets.all(10),
-              child: StaggeredGrid.count(
-                crossAxisCount: 3,
-                mainAxisSpacing: 8,
-                crossAxisSpacing: 8,
-                children: [
-                  StaggeredGridTile.count(
-                    crossAxisCellCount: 2,
-                    mainAxisCellCount: 2,
-                    child: Statistics(
-                      title: 'Total Outstanding',
-                      heroValue: 'SLE ${_creditStore.totalOutstanding.toStringAsFixed(2)}',
-                      hero: true,
-                      info: '${_creditStore.overdueCount} overdue',
-                    ),
-                  ),
-                  StaggeredGridTile.count(
-                    crossAxisCellCount: 1,
-                    mainAxisCellCount: 1,
-                    child: Statistics(
-                      title: 'Overdue',
-                      value: _creditStore.overdueCount.toString(),
-                      color: Colors.red.shade600,
-                      iconUrl: 'assets/icons/alert.png',
-                      iconColor: Colors.red.shade600,
-                    ),
-                  ),
-                  StaggeredGridTile.count(
-                    crossAxisCellCount: 1,
-                    mainAxisCellCount: 1,
-                    child: Statistics(
-                      title: 'Collected',
-                      value: 'SLE ${_creditStore.collected.toStringAsFixed(2)}',
-                      color: Colors.green.shade600,
-                      iconUrl: 'assets/icons/dollar.png',
-                      iconColor: Colors.green.shade600,
-                    ),
-                  ),
-                ],
+          return ListView(
+            children: [
+              const GreetingCard(
+                title: 'Credit',
+                message: 'Get Insight of your credit',
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Credit History',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
+              Container(
+                padding: const EdgeInsets.all(10),
+                child: StaggeredGrid.count(
+                  crossAxisCount: 3,
+                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 8,
+                  children: [
+                    StaggeredGridTile.count(
+                      crossAxisCellCount: 2,
+                      mainAxisCellCount: 2,
+                      child: Statistics(
+                        title: 'Total Outstanding',
+                        heroValue:
+                            'SLE ${_creditStore.totalOutstanding.toStringAsFixed(2)}',
+                        hero: true,
+                        info: '${_creditStore.overdueCount} overdue',
+                      ),
                     ),
-                  ),
-                  Text(
-                    '${users.length} users',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: theme.colorScheme.onSurface.withAlpha(150),
+                    StaggeredGridTile.count(
+                      crossAxisCellCount: 1,
+                      mainAxisCellCount: 1,
+                      child: Statistics(
+                        title: 'Overdue',
+                        value: _creditStore.overdueCount.toString(),
+                        color: Colors.red.shade600,
+                        iconUrl: 'assets/icons/alert.png',
+                        iconColor: Colors.red.shade600,
+                      ),
                     ),
-                  ),
-                ],
+                    StaggeredGridTile.count(
+                      crossAxisCellCount: 1,
+                      mainAxisCellCount: 1,
+                      child: Statistics(
+                        title: 'Collected',
+                        value:
+                            'SLE ${_creditStore.collected.toStringAsFixed(2)}',
+                        color: Colors.green.shade600,
+                        iconUrl: 'assets/icons/dollar.png',
+                        iconColor: Colors.green.shade600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            ...users.map((user) => _buildUserTile(context, user, isDark)),
-            const SizedBox(height: 20),
-          ],
-        );
-      },
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 6,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Credit History',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                    Text(
+                      '${users.length} users',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: theme.colorScheme.onSurface.withAlpha(150),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              ...users.map((user) => _buildUserTile(context, user, isDark)),
+              const SizedBox(height: 20),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -215,9 +225,7 @@ class _CreditLedgerState extends State<CreditLedger> {
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
-                  color: isPaid
-                      ? Colors.green
-                      : theme.colorScheme.onSurface,
+                  color: isPaid ? Colors.green : theme.colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 4),
@@ -226,7 +234,10 @@ class _CreditLedgerState extends State<CreditLedger> {
                 children: [
                   if (!isPaid)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: statusColor.withAlpha(25),
                         borderRadius: BorderRadius.circular(12),
@@ -249,7 +260,10 @@ class _CreditLedgerState extends State<CreditLedger> {
                     ),
                   if (isPaid)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.green.withAlpha(25),
                         borderRadius: BorderRadius.circular(12),
@@ -257,7 +271,11 @@ class _CreditLedgerState extends State<CreditLedger> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.check_circle, size: 12, color: Colors.green),
+                          Icon(
+                            Icons.check_circle,
+                            size: 12,
+                            color: Colors.green,
+                          ),
                           const SizedBox(width: 3),
                           Text(
                             'Paid',
@@ -280,7 +298,11 @@ class _CreditLedgerState extends State<CreditLedger> {
                           color: Colors.green.withAlpha(20),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Icon(Icons.payments, size: 16, color: Colors.green[700]),
+                        child: Icon(
+                          Icons.payments,
+                          size: 16,
+                          color: Colors.green[700],
+                        ),
                       ),
                     ),
                   GestureDetector(
@@ -291,7 +313,11 @@ class _CreditLedgerState extends State<CreditLedger> {
                         color: Colors.red.withAlpha(20),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Icon(Icons.delete_outline, size: 16, color: Colors.red[400]),
+                      child: Icon(
+                        Icons.delete_outline,
+                        size: 16,
+                        color: Colors.red[400],
+                      ),
                     ),
                   ),
                 ],

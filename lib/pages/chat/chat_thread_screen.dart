@@ -1,5 +1,8 @@
 import 'dart:async';
+import 'package:first_flutter_project/components/cart/cart_bottom_sheet.dart';
+import 'package:first_flutter_project/global/market_cart.dart';
 import 'package:first_flutter_project/network/chat_service.dart';
+import 'package:first_flutter_project/pages/market/market_shop_screen.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -16,11 +19,12 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
   final ChatService _chatService = ChatService();
   final TextEditingController _messageCtrl = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  
+
   Map<String, dynamic>? _thread;
   List<Map<String, dynamic>> _messages = [];
   final List<Map<String, dynamic>> _locals = [];
   bool _isLoading = true;
+  bool _isOrg = false;
   Timer? _pollingTimer;
 
   @override
@@ -34,7 +38,9 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
   Future<void> _prepare() async {
     try {
       await _chatService.initChatEncryption();
+      _isOrg = (_chatService.participantKey ?? '').startsWith('org:');
     } catch (_) {}
+    _chatService.markThreadRead(widget.thread['id']);
     await _fetchMessages();
   }
 
@@ -56,7 +62,10 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
     try {
       final response = await _chatService.getMessages(widget.thread['id']);
       final thread = response['thread'] as Map<String, dynamic>? ?? _thread;
-      final messages = List<Map<String, dynamic>>.from(response['messages'] ?? []);
+      final messages = List<Map<String, dynamic>>.from(
+        response['messages'] ?? [],
+      );
+      final serverIds = messages.map((m) => m['id']).toSet();
 
       String threadKey = '';
       if (thread != null) {
@@ -74,14 +83,25 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
 
       if (mounted) {
         setState(() {
+          // Drop local bubbles whose send was confirmed by the server in the
+          // same rebuild so the sent message swaps in seamlessly (no flicker).
+          _locals.removeWhere((l) => serverIds.contains(l['id']));
           _thread = thread;
           // Display messages from top to bottom (chronological)
           _messages = decrypted;
           _isLoading = false;
         });
-        // If we want it to look like WhatsApp (newest at bottom), 
+        // If we want it to look like WhatsApp (newest at bottom),
         // we scroll to the end of the list.
         if (!isBackground) _scrollToBottom();
+      }
+      if (decrypted.isNotEmpty) {
+        final last = decrypted.last;
+        await _chatService.saveLastMessage(widget.thread['id'], {
+          'text': last['decrypted_text'] ?? '',
+          'sent_at': last['sent_at'],
+          'message_type': last['message_type'] ?? 'text',
+        });
       }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
@@ -89,7 +109,9 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
   }
 
   Future<String> _decryptMessage(
-      String threadKey, Map<String, dynamic> message) async {
+    String threadKey,
+    Map<String, dynamic> message,
+  ) async {
     final ciphertext = message['ciphertext'] as String? ?? '';
     final iv = message['iv'] as String? ?? '';
     if (ciphertext.isEmpty) return '';
@@ -102,7 +124,10 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
     if (kDebugMode) {
       try {
         return await _chatService.decryptPayload(
-            ChatService.zeroKeyB64, ciphertext, iv);
+          ChatService.zeroKeyB64,
+          ciphertext,
+          iv,
+        );
       } catch (_) {}
     }
     return 'Encrypted';
@@ -125,6 +150,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
     final local = <String, dynamic>{
       'id': 'local-${DateTime.now().microsecondsSinceEpoch}',
       '_local': true,
+      '_kind': 'text',
       'sender_key': 'user:local',
       'decrypted_text': text,
       'sent_at': DateTime.now().toIso8601String(),
@@ -133,14 +159,38 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
     setState(() => _locals.add(local));
     _scrollToBottom();
 
+    await _doSend(local);
+  }
+
+  Future<void> _retrySend(Map<String, dynamic> local) async {
+    setState(() => local['_status'] = 'sending');
+    await _doSend(local);
+  }
+
+  Future<void> _doSend(Map<String, dynamic> local) async {
+    final text = (local['decrypted_text'] as String? ?? '').trim();
+    if (text.isEmpty) return;
+
     try {
-      await _chatService.sendMessage(
+      final sent = await _chatService.sendMessage(
         widget.thread['id'],
         text,
         thread: _thread ?? widget.thread,
+        messageType: local['_kind'] == 'discount' ? 'discount' : 'text',
+        messageImageUrl: (local['message_image_url'] ?? '').toString(),
+        productId: (local['product_id'] ?? '').toString(),
+        oldPrice: (local['old_price'] ?? '').toString(),
+        newPrice: (local['new_price'] ?? '').toString(),
+        discountLink: (local['discount_link'] ?? '').toString(),
       );
       if (!mounted) return;
-      setState(() => _locals.remove(local));
+      setState(() {
+        final serverId = sent?['id'];
+        if (serverId is String && serverId.isNotEmpty) {
+          local['id'] = serverId;
+        }
+        local.remove('_status');
+      });
       _fetchMessages();
     } catch (e) {
       if (!mounted) return;
@@ -149,24 +199,94 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
     }
   }
 
-  Future<void> _retrySend(Map<String, dynamic> local) async {
-    final text = (local['decrypted_text'] as String? ?? '').trim();
-    if (text.isEmpty) return;
-    setState(() => local['_status'] = 'sending');
-    try {
-      await _chatService.sendMessage(
-        widget.thread['id'],
-        text,
-        thread: _thread ?? widget.thread,
-      );
-      if (!mounted) return;
-      setState(() => _locals.remove(local));
-      _fetchMessages();
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => local['_status'] = 'failed');
-      _scrollToBottom();
-    }
+  Future<void> _openDiscountComposer() async {
+    final nameCtrl = TextEditingController();
+    final imageCtrl = TextEditingController();
+    final oldCtrl = TextEditingController();
+    final newCtrl = TextEditingController();
+
+    final result = await showDialog<(String, String, String, String)>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Send Discount Offer'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: 'Item name'),
+              ),
+              TextField(
+                controller: imageCtrl,
+                decoration: const InputDecoration(labelText: 'Image URL'),
+              ),
+              TextField(
+                controller: oldCtrl,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: const InputDecoration(
+                  labelText: 'Original price (SLE)',
+                ),
+              ),
+              TextField(
+                controller: newCtrl,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: const InputDecoration(
+                  labelText: 'Discount price (SLE)',
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final name = nameCtrl.text.trim();
+              final oldP = oldCtrl.text.trim();
+              final newP = newCtrl.text.trim();
+              if (name.isEmpty || oldP.isEmpty || newP.isEmpty) return;
+              Navigator.pop(ctx, (name, imageCtrl.text.trim(), oldP, newP));
+            },
+            child: const Text('Send Offer'),
+          ),
+        ],
+      ),
+    );
+
+    nameCtrl.dispose();
+    imageCtrl.dispose();
+    oldCtrl.dispose();
+    newCtrl.dispose();
+
+    if (result == null || !mounted) return;
+    final (name, imageUrl, oldPrice, newPrice) = result;
+
+    final local = <String, dynamic>{
+      'id': 'local-${DateTime.now().microsecondsSinceEpoch}',
+      '_local': true,
+      '_kind': 'discount',
+      'sender_key': 'user:local',
+      'decrypted_text': '$name at a discount price of $newPrice',
+      'sent_at': DateTime.now().toIso8601String(),
+      '_status': 'sending',
+      'message_image_url': imageUrl,
+      'product_id': '',
+      'old_price': oldPrice,
+      'new_price': newPrice,
+      'discount_link': 'disc-${DateTime.now().microsecondsSinceEpoch}',
+    };
+    setState(() => _locals.add(local));
+    _scrollToBottom();
+
+    await _doSend(local);
   }
 
   @override
@@ -185,9 +305,9 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
               radius: 18,
               foregroundImage:
                   (widget.thread['shop_image'] != null &&
-                          (widget.thread['shop_image'] as String).isNotEmpty)
-                      ? NetworkImage(widget.thread['shop_image'] as String)
-                      : null,
+                      (widget.thread['shop_image'] as String).isNotEmpty)
+                  ? NetworkImage(widget.thread['shop_image'] as String)
+                  : null,
               onForegroundImageError: widget.thread['shop_image'] != null
                   ? (_, _) {}
                   : null,
@@ -195,15 +315,30 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.thread['shop_name'] ?? 'Official Store',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const Text('Online', style: TextStyle(color: Colors.green, fontSize: 12)),
-                ],
+              child: GestureDetector(
+                onTap: () {
+                  final shopId = widget.thread['shop_id'];
+                  if (shopId is String && shopId.isNotEmpty) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => MarketShopScreen(shopId: shopId),
+                      ),
+                    );
+                  }
+                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.thread['shop_name'] ?? 'Official Store',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -212,19 +347,26 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
       body: Column(
         children: [
           Expanded(
-            child: _isLoading 
-              ? const Center(child: CircularProgressIndicator())
-              : ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _messages.length + _locals.length,
-                  itemBuilder: (context, index) {
-                    if (index < _messages.length) {
-                      return _buildMessageBubble(_messages[index]);
-                    }
-                    return _buildMessageBubble(_locals[index - _messages.length]);
-                  },
-                ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _messages.length + _locals.length,
+                    itemBuilder: (context, index) {
+                      final Map<String, dynamic> message;
+                      if (index < _messages.length) {
+                        message = _messages[index];
+                      } else {
+                        message = _locals[index - _messages.length];
+                      }
+                      if (message['message_type'] == 'discount' ||
+                          message['_kind'] == 'discount') {
+                        return _buildDiscountBubble(message);
+                      }
+                      return _buildMessageBubble(message);
+                    },
+                  ),
           ),
           _buildMessageInput(),
         ],
@@ -239,22 +381,33 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
     final senderKey = message['sender_key'] as String? ?? '';
     final isMe = isLocal || senderKey.startsWith('user:');
     final status = message['_status'] as String? ?? '';
-    final createdAt = message['sent_at'] as String? ?? DateTime.now().toIso8601String();
+    final createdAt =
+        message['sent_at'] as String? ?? DateTime.now().toIso8601String();
     String timeStr = '';
     try {
       timeStr = DateFormat.jm().format(DateTime.parse(createdAt));
     } catch (_) {}
 
+    final bubbleColor = isMe
+        ? (isDark ? const Color(0xFF333333) : const Color(0xFF1A1A1A))
+        : (isDark ? theme.cardColor : const Color(0xFFEBECEF));
+    final textColor = isMe
+        ? (isDark ? const Color(0xFFE0E0E0) : Colors.white)
+        : theme.colorScheme.onSurface;
+    final timeColor = (isDark || !isMe)
+        ? theme.colorScheme.onSurfaceVariant
+        : Colors.white70;
+
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.75,
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isMe
-              ? (isDark ? const Color(0xFF1E3A34) : const Color(0xFFD9FDD3))
-              : theme.cardColor,
+          color: bubbleColor,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(12),
             topRight: const Radius.circular(12),
@@ -275,14 +428,18 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
           children: [
             Text(
               message['decrypted_text'] ?? '',
-              style: TextStyle(fontSize: 15, color: theme.colorScheme.onSurface),
+              style: TextStyle(fontSize: 15, color: textColor),
             ),
             const SizedBox(height: 4),
             if (status == 'failed') ...[
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.error_outline, size: 16, color: Colors.redAccent),
+                  const Icon(
+                    Icons.error_outline,
+                    size: 16,
+                    color: Colors.redAccent,
+                  ),
                   TextButton(
                     onPressed: isLocal ? () => _retrySend(message) : null,
                     child: const Text('Retry'),
@@ -294,10 +451,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  timeStr,
-                  style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant),
-                ),
+                Text(timeStr, style: TextStyle(fontSize: 10, color: timeColor)),
                 if (isLocal && status == 'sending') ...[
                   const SizedBox(width: 6),
                   const SizedBox(
@@ -307,7 +461,11 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
                   ),
                 ] else if (isMe) ...[
                   const SizedBox(width: 4),
-                  Icon(Icons.done_all, size: 14, color: theme.colorScheme.primary),
+                  Icon(
+                    Icons.done_all,
+                    size: 14,
+                    color: theme.colorScheme.primary,
+                  ),
                 ],
               ],
             ),
@@ -323,6 +481,346 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
         : Colors.black.withValues(alpha: 0.08);
   }
 
+  Widget _buildDiscountBubble(Map<String, dynamic> message) {
+    final theme = Theme.of(context);
+    final isLocal = message['_local'] == true;
+    final senderKey = message['sender_key'] as String? ?? '';
+    final isMe = isLocal || senderKey.startsWith('user:');
+    final status = message['_status'] as String? ?? '';
+    final createdAt =
+        message['sent_at'] as String? ?? DateTime.now().toIso8601String();
+    final expired = _isDiscountExpired(createdAt);
+    final oldNum = double.tryParse(message['old_price']?.toString() ?? '');
+    final newNum = double.tryParse(message['new_price']?.toString() ?? '');
+    final hasPrice = oldNum != null && newNum != null && newNum >= 0;
+    final percent = (hasPrice && oldNum > 0)
+        ? ((1 - (newNum / oldNum)) * 100).round().clamp(0, 100)
+        : null;
+    final imageUrl = (message['message_image_url'] ?? '').toString();
+    final name = _discountItemName(message['decrypted_text'] ?? '');
+    String timeStr = '';
+    try {
+      timeStr = DateFormat.jm().format(DateTime.parse(createdAt));
+    } catch (_) {}
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    final cardWidth = (screenWidth * 0.78).clamp(240.0, 320.0).toDouble();
+
+    return Align(
+      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        width: cardWidth,
+        margin: const EdgeInsets.only(bottom: 12),
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: theme.cardColor,
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(16),
+            topRight: const Radius.circular(16),
+            bottomLeft: Radius.circular(isMe ? 16 : 0),
+            bottomRight: Radius.circular(isMe ? 0 : 16),
+          ),
+          border: Border.all(color: theme.dividerColor),
+          boxShadow: [
+            BoxShadow(
+              color: shadowColor(theme, theme.brightness == Brightness.dark),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (imageUrl.isNotEmpty)
+                    Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => _discountImageFallback(theme),
+                    )
+                  else
+                    _discountImageFallback(theme),
+                  if ((percent != null || (newNum != null && newNum > 0)) &&
+                      !expired)
+                    Positioned(
+                      top: 10,
+                      left: 10,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 9,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(
+                            0xFFDC2626,
+                          ).withValues(alpha: 0.92),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.percent,
+                              size: 13,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              percent != null ? '$percent% OFF' : 'SALE',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  if (expired)
+                    Container(
+                      color: const Color(0xFF020617).withValues(alpha: 0.55),
+                      alignment: Alignment.center,
+                      child: const Text(
+                        'Offer Expired',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  if (hasPrice) ...[
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        if (oldNum != newNum) ...[
+                          Text(
+                            'SLE ${oldNum.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: theme.colorScheme.onSurfaceVariant,
+                              decoration: TextDecoration.lineThrough,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        Text(
+                          'SLE ${newNum.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontSize: 19,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF16A34A),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  if (!expired) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFDC2626).withValues(alpha: 0.07),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.timer_outlined,
+                            size: 13,
+                            color: Color(0xFFDC2626),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Offer ends in ${_discountCountdown(createdAt)}',
+                            style: const TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFFDC2626),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  if (status == 'failed') ...[
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          size: 16,
+                          color: Colors.redAccent,
+                        ),
+                        TextButton(
+                          onPressed: isLocal ? () => _retrySend(message) : null,
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  ] else if (!isMe)
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: expired
+                            ? null
+                            : () {
+                                MarketCart().addItem(
+                                  MarketCartItem(
+                                    productId:
+                                        (message['product_id'] ?? '')
+                                            .toString()
+                                            .isNotEmpty
+                                        ? (message['product_id'] ?? '')
+                                              .toString()
+                                        : 'discount-${DateTime.now().millisecondsSinceEpoch}',
+                                    name: name.isNotEmpty
+                                        ? name
+                                        : 'Discount Offer',
+                                    price: newNum ?? oldNum ?? 0.0,
+                                    imageUrl: imageUrl,
+                                    shopId: (widget.thread['shop_id'] ?? '')
+                                        .toString(),
+                                    shopName: (widget.thread['shop_name'] ?? '')
+                                        .toString(),
+                                  ),
+                                );
+                                if (mounted) CartBottomSheet.show(context);
+                              },
+                        icon: const Icon(Icons.shopping_bag_outlined, size: 16),
+                        label: Text(
+                          expired ? 'Offer Expired' : 'Order This Item',
+                        ),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 11),
+                        ),
+                      ),
+                    )
+                  else
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 9),
+                      decoration: BoxDecoration(
+                        color: theme.scaffoldBackgroundColor,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.info_outline, size: 14),
+                          SizedBox(width: 6),
+                          Text(
+                            'Offer sent to buyer',
+                            style: TextStyle(fontSize: 12.5),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text(
+                        timeStr,
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      if (isLocal && status == 'sending') ...[
+                        const SizedBox(width: 6),
+                        const SizedBox(
+                          width: 12,
+                          height: 12,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ] else if (isMe) ...[
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.done_all,
+                          size: 14,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _discountImageFallback(ThemeData theme) {
+    return Container(
+      color: theme.scaffoldBackgroundColor,
+      alignment: Alignment.center,
+      child: Icon(
+        Icons.shopping_bag_outlined,
+        size: 34,
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
+    );
+  }
+
+  bool _isDiscountExpired(String sentAtIso) {
+    final sent = DateTime.tryParse(sentAtIso);
+    if (sent == null) return false;
+    return DateTime.now().isAfter(sent.add(const Duration(hours: 24)));
+  }
+
+  String _discountCountdown(String sentAtIso) {
+    final sent = DateTime.tryParse(sentAtIso);
+    if (sent == null) return '';
+    final expiry = sent.add(const Duration(hours: 24));
+    final remaining = expiry.difference(DateTime.now());
+    if (remaining.isNegative) return '';
+    final hours = remaining.inHours;
+    final minutes = remaining.inMinutes % 60;
+    return hours > 0 ? '${hours}h ${minutes}m' : '${minutes}m';
+  }
+
+  String _discountItemName(String text) {
+    final match = RegExp(
+      r'\s+at a discount price of\s+.*$',
+      caseSensitive: false,
+    ).firstMatch(text);
+    if (match != null) return text.substring(0, match.start).trim();
+    return text.trim();
+  }
+
   Widget _buildMessageInput() {
     final theme = Theme.of(context);
     return Container(
@@ -330,10 +828,11 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
       color: theme.cardColor,
       child: Row(
         children: [
-          IconButton(
-            onPressed: () {},
-            icon: Icon(Icons.add, color: theme.colorScheme.primary),
-          ),
+          if (_isOrg)
+            IconButton(
+              onPressed: _openDiscountComposer,
+              icon: Icon(Icons.add, color: theme.colorScheme.primary),
+            ),
           Expanded(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -354,7 +853,11 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
           CircleAvatar(
             backgroundColor: theme.colorScheme.primary,
             child: IconButton(
-              icon: Icon(Icons.send, color: theme.colorScheme.onPrimary, size: 20),
+              icon: Icon(
+                Icons.send,
+                color: theme.colorScheme.onPrimary,
+                size: 20,
+              ),
               onPressed: _sendMessage,
             ),
           ),

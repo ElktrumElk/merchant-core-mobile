@@ -1,5 +1,8 @@
+import 'package:first_flutter_project/components/cart/cart_bottom_sheet.dart';
+import 'package:first_flutter_project/global/market_cart.dart';
 import 'package:first_flutter_project/network/market_service.dart';
 import 'package:first_flutter_project/pages/market/billboard.dart';
+import 'package:first_flutter_project/pages/market/market_orders_screen.dart';
 import 'package:first_flutter_project/pages/market/market_product_card.dart';
 import 'package:first_flutter_project/pages/market/service_card.dart';
 import 'package:first_flutter_project/pages/market/services_more_screen.dart';
@@ -31,7 +34,7 @@ class _MarketScreenState extends State<MarketScreen> {
       final shops = await _marketService.getShops();
       final services = await _marketService.getServices(limit: 6);
       final products = await _marketService.getTopProducts(limit: 6);
-      
+
       if (mounted) {
         setState(() {
           _shops = shops;
@@ -52,12 +55,28 @@ class _MarketScreenState extends State<MarketScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Market'),
+        actions: [
+          IconButton(
+            tooltip: 'My Orders',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MarketOrdersScreen()),
+              );
+            },
+            icon: const Icon(Icons.receipt_long_outlined),
+          ),
+        ],
+      ),
+      floatingActionButton: _buildCartFab(theme),
       body: RefreshIndicator(
         onRefresh: _fetchMarketData,
         child: ListView(
           children: [
             const Billboard(),
-            
+
             _buildSectionHeader('Featured Shops', onSeeAll: () {}),
             _buildHorizontalList(
               height: 180,
@@ -65,12 +84,15 @@ class _MarketScreenState extends State<MarketScreen> {
               itemBuilder: (context, index) => ShopCard(shop: _shops[index]),
             ),
 
-            _buildSectionHeader('Services', onSeeAll: () {
-              Navigator.push(
-                context, 
-                MaterialPageRoute(builder: (_) => const ServicesMoreScreen())
-              );
-            }),
+            _buildSectionHeader(
+              'Services',
+              onSeeAll: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ServicesMoreScreen()),
+                );
+              },
+            ),
             _buildHorizontalList(
               height: 150,
               itemCount: _services.isEmpty ? 0 : _services.length + 1,
@@ -112,11 +134,33 @@ class _MarketScreenState extends State<MarketScreen> {
                   },
                 ),
               ),
-            
+
             const SizedBox(height: 40),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildCartFab(ThemeData theme) {
+    final cart = MarketCart();
+    return ListenableBuilder(
+      listenable: cart,
+      builder: (context, _) {
+        if (cart.isEmpty) return const SizedBox.shrink();
+        return FloatingActionButton.extended(
+          onPressed: () => CartBottomSheet.show(context),
+          backgroundColor: Colors.black,
+          foregroundColor: Colors.white,
+          elevation: 4,
+          icon: Badge(
+            label: Text('${cart.totalItemCount}'),
+            isLabelVisible: cart.totalItemCount > 0,
+            child: const Icon(Icons.shopping_cart_outlined),
+          ),
+          label: Text('SLE ${cart.subtotal.toStringAsFixed(2)}'),
+        );
+      },
     );
   }
 
@@ -130,10 +174,7 @@ class _MarketScreenState extends State<MarketScreen> {
             title,
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          TextButton(
-            onPressed: onSeeAll,
-            child: const Text('View All'),
-          ),
+          TextButton(onPressed: onSeeAll, child: const Text('View All')),
         ],
       ),
     );
@@ -145,10 +186,16 @@ class _MarketScreenState extends State<MarketScreen> {
     required Widget Function(BuildContext, int) itemBuilder,
   }) {
     if (_isLoading) {
-      return SizedBox(height: height, child: const Center(child: CircularProgressIndicator()));
+      return SizedBox(
+        height: height,
+        child: const Center(child: CircularProgressIndicator()),
+      );
     }
     if (itemCount == 0) {
-      return SizedBox(height: height, child: const Center(child: Text('No items found')));
+      return SizedBox(
+        height: height,
+        child: const Center(child: Text('No items found')),
+      );
     }
     return SizedBox(
       height: height,
@@ -165,8 +212,8 @@ class _MarketScreenState extends State<MarketScreen> {
     return GestureDetector(
       onTap: () {
         Navigator.push(
-          context, 
-          MaterialPageRoute(builder: (_) => const ServicesMoreScreen())
+          context,
+          MaterialPageRoute(builder: (_) => const ServicesMoreScreen()),
         );
       },
       child: Container(
@@ -182,7 +229,13 @@ class _MarketScreenState extends State<MarketScreen> {
             children: [
               Icon(Icons.add_circle_outline, color: Colors.blue),
               SizedBox(height: 4),
-              Text('See More', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+              Text(
+                'See More',
+                style: TextStyle(
+                  color: Colors.blue,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
         ),

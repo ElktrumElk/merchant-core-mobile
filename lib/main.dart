@@ -158,6 +158,11 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
             _currentIndex =
                 index; // Re-renders the layout with the new tab index view state
           });
+          if (index == 2) {
+            _chatListKey.currentState?.startPolling();
+          } else {
+            _chatListKey.currentState?.stopPolling();
+          }
         },
         items: const [
           BottomNavigationBarItem(

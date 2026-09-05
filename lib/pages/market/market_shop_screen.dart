@@ -59,9 +59,11 @@ class _MarketShopScreenState extends State<MarketShopScreen> with SingleTickerPr
     final shopName = _shop!['shop_name'] ?? 'Shop';
     final ownerId = (_shop!['owner_id'] ?? _shop!['org_id'] ?? '').toString();
     final ownerKey = ownerId.startsWith('org:') ? ownerId : 'org:$ownerId';
+    final shopImage = (_shop!['profile_image'] ?? '').toString();
 
     try {
-      await _chatService.createThread(shopId, shopName, ownerKey);
+      await _chatService.createThread(shopId, shopName, ownerKey,
+          shopImage: shopImage);
       final threads = await _chatService.getThreads();
       final thread = threads.firstWhere((t) => t['shop_id'] == shopId);
       
