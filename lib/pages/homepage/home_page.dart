@@ -7,6 +7,7 @@ import 'package:first_flutter_project/components/subcards/sub_cards.dart';
 import 'package:first_flutter_project/global/credit_global.dart';
 import 'package:first_flutter_project/global/sales_global.dart';
 import 'package:first_flutter_project/global/stock/stock_global.dart';
+import 'package:first_flutter_project/network/transaction_service.dart';
 //import 'package:first_flutter_project/pages/stockpage/stock_page.dart';
 import 'package:flutter/material.dart';
 
@@ -68,6 +69,19 @@ class _MyHomePageState extends State<MyHomePage> {
             const RevenueTrend(),
             SubCards(
               title: 'Recent Transaction',
+              trailing: _orderStore.orders.isEmpty
+                  ? null
+                  : TextButton(
+                      onPressed: () => _clearRecentTransactions(context),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        minimumSize: const Size(0, 32),
+                      ),
+                      child: const Text(
+                        'Clear All',
+                        style: TextStyle(fontSize: 13),
+                      ),
+                    ),
               widget: _buildRecentTransactions(),
             ),
             SubCards(
@@ -161,6 +175,19 @@ class _MyHomePageState extends State<MyHomePage> {
         );
       }).toList(),
     );
+  }
+
+  Future<void> _clearRecentTransactions(BuildContext context) async {
+    try {
+      await TransactionService().clearTransactions();
+      _orderStore.clearOrders();
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to clear transactions: $e')),
+        );
+      }
+    }
   }
 
   Widget _buildAlerts() {

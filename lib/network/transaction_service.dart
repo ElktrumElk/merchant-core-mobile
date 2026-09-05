@@ -21,4 +21,21 @@ class TransactionService {
       throw Exception('Failed to load transactions');
     }
   }
+
+  Future<void> clearTransactions() async {
+    final token = await TokenStorage.loadToken();
+    if (token == null || token.isEmpty) {
+      throw Exception('Not authenticated');
+    }
+    final url = Uri.parse('$_base/api/v1/transactions');
+
+    final response = await http.delete(
+      url,
+      headers: SecreteData(token).getHeaders(),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to clear transactions');
+    }
+  }
 }

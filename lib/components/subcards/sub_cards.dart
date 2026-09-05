@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
 class SubCards extends StatelessWidget {
-  const SubCards({super.key, this.title = '', this.widget});
+  const SubCards({super.key, this.title = '', this.widget, this.trailing});
 
   final String title;
   final Widget? widget;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +36,8 @@ class SubCards extends StatelessWidget {
                     color: theme.colorScheme.onSurface,
                   ),
                 ),
+                const Spacer(),
+                ?trailing,
               ],
             ),
           ),

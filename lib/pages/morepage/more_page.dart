@@ -33,88 +33,115 @@ class MorePage extends StatelessWidget {
           const UserDetails(),
           const SizedBox(height: 20),
 
-          _optionTile(
+          _section(
             context,
-            icon: Icons.inventory_2_outlined,
-            title: 'Stock Inventory',
-            subtitle: 'Manage your products and stock levels',
-            onTap: () => _open(
-              context,
-              const StockPage(),
-              'Stock Inventory',
-              Icons.inventory_2_outlined,
-            ),
+            children: [
+              _optionTile(
+                context,
+                icon: Icons.inventory_2_outlined,
+                title: 'Stock Inventory',
+                subtitle: 'Manage your products and stock levels',
+                onTap: () => _open(
+                  context,
+                  const StockPage(),
+                  'Stock Inventory',
+                  Icons.inventory_2_outlined,
+                ),
+              ),
+              _optionTile(
+                context,
+                icon: Icons.credit_card_outlined,
+                title: 'Credit Ledger',
+                subtitle: 'Track customer debts and payments',
+                onTap: () => _open(
+                  context,
+                  const CreditLedger(),
+                  'Credit Ledger',
+                  Icons.credit_card_outlined,
+                ),
+              ),
+              _optionTile(
+                context,
+                icon: Icons.calculate_outlined,
+                title: 'Calculator',
+                subtitle: 'Quick business calculations',
+                onTap: () => _open(
+                  context,
+                  const CalcPage(),
+                  'Calculator',
+                  Icons.calculate_outlined,
+                ),
+              ),
+            ],
           ),
-          _optionTile(
-            context,
-            icon: Icons.credit_card_outlined,
-            title: 'Credit Ledger',
-            subtitle: 'Track customer debts and payments',
-            onTap: () => _open(
-              context,
-              const CreditLedger(),
-              'Credit Ledger',
-              Icons.credit_card_outlined,
-            ),
-          ),
-_optionTile(
-          context,
-          icon: Icons.calculate_outlined,
-          title: 'Calculator',
-          subtitle: 'Quick business calculations',
-          onTap: () => _open(
-            context,
-            const CalcPage(),
-            'Calculator',
-            Icons.calculate_outlined,
-          ),
-        ),
 
-          const Divider(height: 32),
+          const SizedBox(height: 16),
 
-          _optionTile(
+          _section(
             context,
-            icon: Icons.settings_outlined,
-            title: 'Settings',
-            subtitle: 'Theme, notifications, backup',
-            onTap: () => SettingPanel().showSettingPanel(context),
+            children: [
+              _optionTile(
+                context,
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                subtitle: 'Theme, notifications, backup',
+                onTap: () => SettingPanel().showSettingPanel(context),
+              ),
+              _optionTile(
+                context,
+                icon: Icons.notifications_outlined,
+                title: 'Notifications',
+                subtitle: GlobalValueNotifiers.isGetNotify.value
+                    ? 'Enabled'
+                    : 'Disabled',
+                onTap: () => NotificationPanel().show(context),
+              ),
+              _optionTile(
+                context,
+                icon: Icons.info_outline,
+                title: 'About',
+                subtitle: 'Version 1.0.0',
+                onTap: () => _showAbout(context),
+              ),
+              _optionTile(
+                context,
+                icon: Icons.share_outlined,
+                title: 'Share App',
+                subtitle: 'Tell others about Merchant Core',
+                onTap: () => _shareApp(context),
+              ),
+            ],
           ),
-          _optionTile(
-            context,
-            icon: Icons.notifications_outlined,
-            title: 'Notifications',
-            subtitle: GlobalValueNotifiers.isGetNotify.value
-                ? 'Enabled'
-                : 'Disabled',
-            onTap: () => NotificationPanel().show(context),
-          ),
-          _optionTile(
-            context,
-            icon: Icons.info_outline,
-            title: 'About',
-            subtitle: 'Version 1.0.0',
-            onTap: () => _showAbout(context),
-          ),
-          _optionTile(
-            context,
-            icon: Icons.share_outlined,
-            title: 'Share App',
-            subtitle: 'Tell others about Merchant Core',
-            onTap: () => _shareApp(context),
-          ),
-          const SizedBox(height: 24),
 
-          _optionTile(
+          const SizedBox(height: 16),
+
+          _section(
             context,
-            icon: Icons.logout,
-            title: 'Log Out',
-            subtitle: 'Exit your current session',
-            onTap: () => _confirmLogout(context),
-            color: Colors.red,
+            children: [
+              _optionTile(
+                context,
+                icon: Icons.logout,
+                title: 'Log Out',
+                subtitle: 'Exit your current session',
+                onTap: () => _confirmLogout(context),
+                color: Colors.red,
+              ),
+            ],
           ),
           const SizedBox(height: 40),
         ],
       ),
+    );
+  }
+
+  Widget _section(BuildContext context, {required List<Widget> children}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(15),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(children: children),
     );
   }
 
@@ -131,23 +158,24 @@ _optionTile(
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(14)),
-      child: ListTile(
-        splashColor: Colors.transparent,
-        leading: Icon(icon, color: primaryColor),
-        title: Text(
-          title,
-          style: TextStyle(
-            color: theme.colorScheme.onSurface,
-            fontWeight: FontWeight.w600,
+      child: Material(
+        color: Colors.transparent,
+        child: ListTile(
+          leading: Icon(icon, color: primaryColor),
+          title: Text(
+            title,
+            style: TextStyle(
+              color: theme.colorScheme.onSurface,
+              fontWeight: FontWeight.w600,
+            ),
           ),
+          subtitle: Text(
+            subtitle,
+            style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+          ),
+          trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+          onTap: onTap,
         ),
-        subtitle: Text(
-          subtitle,
-          style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
-        ),
-        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-        onTap: onTap,
       ),
     );
   }

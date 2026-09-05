@@ -956,7 +956,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
           CircleAvatar(
             backgroundColor: _accentButtonColor(theme),
             child: IconButton(
-              icon: Icon(
+             icon: Icon(
                 Icons.send,
                 color: theme.brightness == Brightness.dark
                     ? theme.colorScheme.onPrimary

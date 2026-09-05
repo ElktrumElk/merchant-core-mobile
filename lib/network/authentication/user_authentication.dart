@@ -29,6 +29,9 @@ class SecreteData {
   // Credit endpoints
   static const String creditEntriesEndpoint = '/api/v1/credit-entries';
 
+  // Notification endpoints
+  static const String notificationsEndpoint = '/api/v1/notifications';
+
   // Market endpoints
   static const String marketAdvertsEndpoint = '/api/v1/market/advert';
   static const String marketShopsEndpoint = '/api/v1/market/shops';
