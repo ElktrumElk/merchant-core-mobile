@@ -4,15 +4,13 @@ import 'package:first_flutter_project/components/settings/settings.dart';
 import 'package:first_flutter_project/global/app_theme.dart';
 import 'package:first_flutter_project/global/theme_notifier.dart';
 import 'package:first_flutter_project/global/sales_global.dart';
-import 'package:first_flutter_project/pages/calcpage/calc_page.dart';
-import 'package:first_flutter_project/pages/creditPage/credit_ledger.dart';
 import 'package:first_flutter_project/pages/morepage/more_page.dart';
+import 'package:first_flutter_project/pages/chat/chat_list_screen.dart';
 import 'package:first_flutter_project/pages/homepage/home_page.dart';
 import 'package:first_flutter_project/pages/market/MarketScreen.dart';
 import 'package:first_flutter_project/pages/market/market_search_page.dart';
 import 'package:first_flutter_project/pages/pos/pos_page.dart';
 import 'package:first_flutter_project/pages/splash/splash_screen.dart';
-import 'package:first_flutter_project/pages/stockpage/stock_page.dart';
 import 'package:flutter/material.dart';
 
 void main() async {
@@ -64,22 +62,21 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
   final List<String> _titles = [
     'Dashboard',
     'Market',
-    'Stock',
+    'Negotiate',
     'Pos',
-    'Credit',
-    'Calc',
     'More',
   ];
+
+  final GlobalKey<ChatListScreenState> _chatListKey =
+      GlobalKey<ChatListScreenState>();
 
 
   final List<IconData> icons = [
     Icons.dashboard,
     Icons.storefront,
-    Icons.inventory_2,
+    Icons.chat_bubble_outline,
     Icons.point_of_sale,
-    Icons.credit_card,
-    Icons.calculate,
-    Icons.more,
+    Icons.more_horiz,
   ];
 
   // List of actual body widgets for each tab index
@@ -92,10 +89,8 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
     _pages = [
       const MyHomePage(), // Your existing homepage component
       const MarketScreen(),
-      const StockPage(), // stock page
+      ChatListScreen(key: _chatListKey),
       const PosPage(),
-      const CreditLedger(),
-      const CalcPage(),
       const MorePage(),
     ];
   }
@@ -124,24 +119,32 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
               icon: const Icon(Icons.search),
             ),
 
-          ListenableBuilder(
-            listenable: OrderStore(),
-            builder: (context, _) {
-              final bool hasNotifications = OrderStore().orders.isNotEmpty;
-              return IconButton(
-                onPressed: () => NotificationPanel().show(context),
-                icon: Icon(
-                  hasNotifications ? Icons.notifications_active : Icons.notifications_none,
-                  color: hasNotifications ? Colors.blue : null,
-                ),
-              );
-            },
-          ),
+          if (_currentIndex == 2) // Search on the header for Negotiate
+            IconButton(
+              onPressed: () => _chatListKey.currentState?.activateSearch(),
+              icon: const Icon(Icons.search),
+            ),
 
-          IconButton(
-            onPressed: () => SettingPanel().showSettingPanel(context),
-            icon: const Icon(Icons.settings),
-          ),
+          if (_currentIndex != 2) ...[
+            ListenableBuilder(
+              listenable: OrderStore(),
+              builder: (context, _) {
+                final bool hasNotifications = OrderStore().orders.isNotEmpty;
+                return IconButton(
+                  onPressed: () => NotificationPanel().show(context),
+                  icon: Icon(
+                    hasNotifications ? Icons.notifications_active : Icons.notifications_none,
+                    color: hasNotifications ? Colors.blue : null,
+                  ),
+                );
+              },
+            ),
+
+            IconButton(
+              onPressed: () => SettingPanel().showSettingPanel(context),
+              icon: const Icon(Icons.settings),
+            ),
+          ],
         ],
       ),
       // Displays the correct active page body view configuration
@@ -149,6 +152,7 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
 
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
+        type: BottomNavigationBarType.fixed,
         onTap: (int index) {
           setState(() {
             _currentIndex =
@@ -167,24 +171,14 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
             label: 'Market',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.inventory_2_outlined),
-            label: 'Stock',
-            activeIcon: Icon(Icons.inventory_2),
+            icon: Icon(Icons.chat_bubble_outline),
+            activeIcon: Icon(Icons.chat_bubble),
+            label: 'Negotiate',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.point_of_sale_outlined),
             activeIcon: Icon(Icons.point_of_sale),
             label: 'Pos',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.credit_card_outlined),
-            activeIcon: Icon(Icons.credit_card),
-            label: 'Credit',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calculate_outlined),
-            activeIcon: Icon(Icons.calculate),
-            label: 'Calc',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.more_horiz_outlined),

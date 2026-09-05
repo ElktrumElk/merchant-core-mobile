@@ -1,4 +1,6 @@
+import 'package:first_flutter_project/network/chat_service.dart';
 import 'package:first_flutter_project/network/market_service.dart';
+import 'package:first_flutter_project/pages/chat/chat_thread_screen.dart';
 import 'package:first_flutter_project/pages/market/market_product_card.dart';
 import 'package:first_flutter_project/pages/market/service_card.dart';
 import 'package:flutter/material.dart';
@@ -14,6 +16,7 @@ class MarketShopScreen extends StatefulWidget {
 
 class _MarketShopScreenState extends State<MarketShopScreen> with SingleTickerProviderStateMixin {
   final MarketService _marketService = MarketService();
+  final ChatService _chatService = ChatService();
   Map<String, dynamic>? _shop;
   List<Map<String, dynamic>> _products = [];
   List<Map<String, dynamic>> _services = [];
@@ -46,6 +49,34 @@ class _MarketShopScreenState extends State<MarketShopScreen> with SingleTickerPr
       }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _startChat() async {
+    if (_shop == null) return;
+    
+    final shopId = _shop!['id'];
+    final shopName = _shop!['shop_name'] ?? 'Shop';
+    final ownerId = (_shop!['owner_id'] ?? _shop!['org_id'] ?? '').toString();
+    final ownerKey = ownerId.startsWith('org:') ? ownerId : 'org:$ownerId';
+
+    try {
+      await _chatService.createThread(shopId, shopName, ownerKey);
+      final threads = await _chatService.getThreads();
+      final thread = threads.firstWhere((t) => t['shop_id'] == shopId);
+      
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => ChatThreadScreen(thread: thread)),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not start chat: $e')),
+        );
+      }
     }
   }
 
@@ -153,7 +184,7 @@ class _MarketShopScreenState extends State<MarketShopScreen> with SingleTickerPr
                       children: [
                         Expanded(
                           child: FilledButton.icon(
-                            onPressed: () {},
+                            onPressed: _startChat,
                             icon: const Icon(Icons.message_outlined),
                             label: const Text('Message'),
                             style: FilledButton.styleFrom(

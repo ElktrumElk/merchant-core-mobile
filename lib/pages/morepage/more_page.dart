@@ -3,6 +3,9 @@ import 'package:first_flutter_project/components/settings/settings.dart';
 import 'package:first_flutter_project/components/settings/userDetails.dart';
 import 'package:first_flutter_project/global/valueNotifiers/gloabal_value_notifiers.dart';
 import 'package:first_flutter_project/network/logout/logout.dart';
+import 'package:first_flutter_project/pages/calcpage/calc_page.dart';
+import 'package:first_flutter_project/pages/creditPage/credit_ledger.dart';
+import 'package:first_flutter_project/pages/stockpage/stock_page.dart';
 import 'package:flutter/material.dart';
 
 class MorePage extends StatelessWidget {
@@ -15,6 +18,40 @@ class MorePage extends StatelessWidget {
       child: Column(children: [
         const UserDetails(),
         const SizedBox(height: 20),
+        
+        _optionTile(
+          context,
+          icon: Icons.inventory_2_outlined,
+          title: 'Stock Inventory',
+          subtitle: 'Manage your products and stock levels',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const StockPage()),
+          ),
+        ),
+        _optionTile(
+          context,
+          icon: Icons.credit_card_outlined,
+          title: 'Credit Ledger',
+          subtitle: 'Track customer debts and payments',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CreditLedger()),
+          ),
+        ),
+        _optionTile(
+          context,
+          icon: Icons.calculate_outlined,
+          title: 'Calculator',
+          subtitle: 'Quick business calculations',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CalcPage()),
+          ),
+        ),
+        
+        const Divider(height: 32),
+
         _optionTile(
           context,
           icon: Icons.settings_outlined,
@@ -46,6 +83,15 @@ class MorePage extends StatelessWidget {
         ),
         const SizedBox(height: 24),
 
+        _optionTile(
+          context,
+          icon: Icons.logout,
+          title: 'Log Out',
+          subtitle: 'Exit your current session',
+          onTap: () => _confirmLogout(context),
+          color: Colors.red,
+        ),
+        const SizedBox(height: 40),
       ]),
     );
   }
@@ -56,19 +102,21 @@ class MorePage extends StatelessWidget {
     required String title,
     required String subtitle,
     required VoidCallback onTap,
+    Color? color,
   }) {
     final theme = Theme.of(context);
+    final primaryColor = color ?? const Color(0xFF1565C0);
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-
         borderRadius: BorderRadius.circular(14),
       ),
       child: ListTile(
         splashColor: Colors.transparent,
-        leading: Icon(icon, color: const Color(0xFF1565C0)),
+        leading: Icon(icon, color: primaryColor),
         title: Text(title,
-          style: TextStyle(color: theme.colorScheme.onSurface)),
+          style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.w600)),
         subtitle: Text(subtitle,
           style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
         trailing: const Icon(Icons.chevron_right, color: Colors.grey),
@@ -124,12 +172,10 @@ class MorePage extends StatelessWidget {
               Navigator.pop(ctx);
               Logout().logout();
             },
-            child: const Text('Log Out', style: TextStyle(color: Colors.blue)),
+            child: const Text('Log Out', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
     );
   }
 }
-
-

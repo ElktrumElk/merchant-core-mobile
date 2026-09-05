@@ -1,4 +1,6 @@
+import 'package:first_flutter_project/network/chat_service.dart';
 import 'package:first_flutter_project/network/market_service.dart';
+import 'package:first_flutter_project/pages/chat/chat_thread_screen.dart';
 import 'package:first_flutter_project/pages/market/market_shop_screen.dart';
 import 'package:first_flutter_project/pages/pos/cart_panel.dart';
 import 'package:first_flutter_project/pages/stockpage/stock_page.dart';
@@ -14,6 +16,7 @@ class ProductInfoScreen extends StatefulWidget {
 
 class _ProductInfoScreenState extends State<ProductInfoScreen> {
   final MarketService _marketService = MarketService();
+  final ChatService _chatService = ChatService();
   late Map<String, dynamic> _product;
   bool _isLoading = false;
 
@@ -36,6 +39,40 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
       }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _startChat() async {
+    final shopId = _product['shop_id'];
+    final shopName = _product['shop_name'] ?? 'Official Store';
+    
+    if (shopId == null) return;
+
+    try {
+      // Fetch shop details to get the owner key
+      final shop = await _marketService.getShop(shopId);
+      final ownerId = (shop['owner_id'] ?? shop['org_id'] ?? '').toString();
+      final ownerKey = ownerId.startsWith('org:') ? ownerId : 'org:$ownerId';
+
+      await _chatService.createThread(shopId, shopName, ownerKey);
+      
+      // Navigate to chat list or specific thread? 
+      // For simplicity, we navigate to the thread screen by finding the new thread
+      final threads = await _chatService.getThreads();
+      final thread = threads.firstWhere((t) => t['shop_id'] == shopId);
+      
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => ChatThreadScreen(thread: thread)),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not start chat: $e')),
+        );
+      }
     }
   }
 
@@ -71,19 +108,18 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
             expandedHeight: 350,
             pinned: true,
             actions: [
-              Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: IconButton.filled(
-                  onPressed: () {
-                    // Messaging logic
-                  },
-                  icon: const Icon(Icons.message_outlined),
-                  style: IconButton.styleFrom(
-                    backgroundColor: Colors.black87,
-                    foregroundColor: Colors.white,
+              if (_product['in_stock'] == true)
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: IconButton.filled(
+                    onPressed: _startChat,
+                    icon: const Icon(Icons.message_outlined),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.black87,
+                      foregroundColor: Colors.white,
+                    ),
                   ),
                 ),
-              ),
             ],
             flexibleSpace: FlexibleSpaceBar(
               background: Hero(
@@ -149,12 +185,9 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
                       ),
                     ],
                   ),
-                  
                   const SizedBox(height: 24),
                   const Text('Ratings & Reviews', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
-                  
-                  // Rating Breakdown
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -197,9 +230,7 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
                       ),
                     ],
                   ),
-
                   const Divider(height: 48),
-
                   const Text(
                     'Product Description',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -209,7 +240,6 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
                     _product['description'] ?? 'No description available for this product.',
                     style: TextStyle(color: Colors.grey.shade800, height: 1.6, fontSize: 15),
                   ),
-
                   if (variants.isNotEmpty) ...[
                     const SizedBox(height: 32),
                     const Text(
@@ -243,10 +273,7 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
                       ),
                     ),
                   ],
-
                   const Divider(height: 64),
-
-                  // Rating Input
                   const Center(
                     child: Text(
                       'How would you rate this product?',
@@ -269,12 +296,12 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
                       );
                     }),
                   ),
-                  const SizedBox(height: 120), // Space for bottom buttons
+                  const SizedBox(height: 120),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
       bottomSheet: Container(
         padding: const EdgeInsets.all(20),

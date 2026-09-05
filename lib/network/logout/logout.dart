@@ -1,12 +1,15 @@
 
 import 'package:first_flutter_project/main.dart';
 import 'package:first_flutter_project/module/storage/device_storage.dart';
+import 'package:first_flutter_project/network/chat_service.dart';
 import 'package:first_flutter_project/pages/splash/splash_screen.dart';
 
 
 class Logout {
 
   void logout () async {
+    await ChatService().wipeKeys();
+
     DeviceStorage.setKey('isLogin');
     await DeviceStorage.deleteValue();
 
