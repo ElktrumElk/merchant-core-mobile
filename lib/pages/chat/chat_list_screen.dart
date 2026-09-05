@@ -5,6 +5,26 @@ import 'package:first_flutter_project/pages/chat/chat_thread_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+/// Total unread negotiation messages across all shops, surfaced as a badge on
+/// the Negotiate tab in the bottom navigation bar.
+final ValueNotifier<int> negotiationUnreadCount = ValueNotifier<int>(0);
+
+/// Refreshes the badge count from the server. Used by a shell-level timer so
+/// new messages are reflected even while the Negotiate tab isn't mounted (the
+/// list screen is disposed when you switch tabs, so its own 10s poll only runs
+/// while the tab is active).
+Future<void> refreshNegotiationUnread() async {
+  final service = ChatService();
+  try {
+    final threads = await service.getThreads();
+    var total = 0;
+    for (final thread in threads) {
+      total += await service.unreadCountFor(thread);
+    }
+    negotiationUnreadCount.value = total;
+  } catch (_) {}
+}
+
 class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
 
@@ -60,6 +80,13 @@ class ChatListScreenState extends State<ChatListScreen> {
     });
   }
 
+  void _syncUnreadBadge() {
+    negotiationUnreadCount.value = _unread.values.fold(
+      0,
+      (sum, count) => sum + count,
+    );
+  }
+
   Future<void> _loadThreads({bool silent = false}) async {
     if (!silent) {
       final cached = await _chatService.loadCachedThreads();
@@ -105,6 +132,7 @@ class ChatListScreenState extends State<ChatListScreen> {
         _unread = unread;
         _lastMessages = previews;
       });
+      _syncUnreadBadge();
     }
 
     final missing = <Map<String, dynamic>>[];
@@ -143,6 +171,7 @@ class ChatListScreenState extends State<ChatListScreen> {
     setState(() {
       if (id != null) _unread[id] = 0;
     });
+    _syncUnreadBadge();
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => ChatThreadScreen(thread: thread)),
@@ -180,6 +209,7 @@ class ChatListScreenState extends State<ChatListScreen> {
           _unread.remove(thread['id']);
           _lastMessages.remove(thread['id']);
         });
+        _syncUnreadBadge();
       }
     } catch (e) {
       if (mounted) {

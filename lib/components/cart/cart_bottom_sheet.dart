@@ -17,7 +17,7 @@ class CartBottomSheet extends StatefulWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) => const FractionallySizedBox(
-        heightFactor: 0.6,
+        heightFactor: 0.75,
         child: CartBottomSheet(),
       ),
     );

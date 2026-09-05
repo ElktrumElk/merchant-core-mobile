@@ -7,6 +7,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+/// Premium near-black used for the send button and discount order button on the
+/// light theme, matching the app's dark-onSurface accent.
+const Color _premiumBlack = Color(0xFF0A0A0A);
+
 class ChatThreadScreen extends StatefulWidget {
   final Map<String, dynamic> thread;
   const ChatThreadScreen({super.key, required this.thread});
@@ -398,78 +402,84 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
         ? theme.colorScheme.onSurfaceVariant
         : Colors.white70;
 
-    return Align(
-      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: bubbleColor,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(12),
-            topRight: const Radius.circular(12),
-            bottomLeft: Radius.circular(isMe ? 12 : 0),
-            bottomRight: Radius.circular(isMe ? 0 : 12),
+    return GestureDetector(
+      onLongPress: () => _showMessageActions(message),
+      child: Align(
+        alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.75,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: shadowColor(theme, isDark),
-              blurRadius: 2,
-              offset: const Offset(0, 1),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: bubbleColor,
+            borderRadius: BorderRadius.only(
+              topLeft: const Radius.circular(12),
+              topRight: const Radius.circular(12),
+              bottomLeft: Radius.circular(isMe ? 12 : 0),
+              bottomRight: Radius.circular(isMe ? 0 : 12),
             ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              message['decrypted_text'] ?? '',
-              style: TextStyle(fontSize: 15, color: textColor),
-            ),
-            const SizedBox(height: 4),
-            if (status == 'failed') ...[
+            boxShadow: [
+              BoxShadow(
+                color: shadowColor(theme, isDark),
+                blurRadius: 2,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                message['decrypted_text'] ?? '',
+                style: TextStyle(fontSize: 15, color: textColor),
+              ),
+              const SizedBox(height: 4),
+              if (status == 'failed') ...[
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 16,
+                      color: Colors.redAccent,
+                    ),
+                    TextButton(
+                      onPressed: isLocal ? () => _retrySend(message) : null,
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+              ],
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
-                    Icons.error_outline,
-                    size: 16,
-                    color: Colors.redAccent,
+                  Text(
+                    timeStr,
+                    style: TextStyle(fontSize: 10, color: timeColor),
                   ),
-                  TextButton(
-                    onPressed: isLocal ? () => _retrySend(message) : null,
-                    child: const Text('Retry'),
-                  ),
+                  if (isLocal && status == 'sending') ...[
+                    const SizedBox(width: 6),
+                    const SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ] else if (isMe) ...[
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.done_all,
+                      size: 14,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ],
                 ],
               ),
-              const SizedBox(height: 2),
             ],
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(timeStr, style: TextStyle(fontSize: 10, color: timeColor)),
-                if (isLocal && status == 'sending') ...[
-                  const SizedBox(width: 6),
-                  const SizedBox(
-                    width: 12,
-                    height: 12,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ] else if (isMe) ...[
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.done_all,
-                    size: 14,
-                    color: theme.colorScheme.primary,
-                  ),
-                ],
-              ],
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -479,6 +489,86 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
     return isDark
         ? theme.shadowColor.withValues(alpha: 0.4)
         : Colors.black.withValues(alpha: 0.08);
+  }
+
+  Color _accentButtonColor(ThemeData theme) {
+    return theme.brightness == Brightness.dark
+        ? theme.colorScheme.primary
+        : _premiumBlack;
+  }
+
+  Future<void> _showMessageActions(Map<String, dynamic> message) async {
+    final isLocal = message['_local'] == true;
+    final senderKey = message['sender_key'] as String? ?? '';
+    final isMe = isLocal || senderKey.startsWith('user:');
+    if (!isMe) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Only messages you sent can be deleted'),
+          ),
+        );
+      return;
+    }
+
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.only(bottom: 8),
+          children: [
+            ListTile(
+              leading: const Icon(Icons.delete_outline, color: Colors.red),
+              title: const Text(
+                'Delete for everyone',
+                style: TextStyle(color: Colors.red),
+              ),
+              subtitle: const Text(
+                'Removes this message for both sides',
+                style: TextStyle(fontSize: 12),
+              ),
+              onTap: () => Navigator.pop(ctx, 'delete'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.block),
+              title: const Text('Cancel'),
+              onTap: () => Navigator.pop(ctx),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (action != 'delete' || !mounted) return;
+
+    final messageId = (message['id'] ?? '').toString();
+    if (isLocal || messageId.startsWith('local-')) {
+      setState(() {
+        _locals.removeWhere((m) => (m['id'] ?? '') == messageId);
+      });
+      _scrollToBottom();
+      return;
+    }
+
+    try {
+      await _chatService.deleteMessage(widget.thread['id'], messageId);
+      if (!mounted) return;
+      setState(() {
+        _messages.removeWhere((m) => (m['id'] ?? '').toString() == messageId);
+      });
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('Message deleted')));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(content: Text('Could not delete message')),
+        );
+    }
   }
 
   Widget _buildDiscountBubble(Map<String, dynamic> message) {
@@ -506,278 +596,291 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final cardWidth = (screenWidth * 0.78).clamp(240.0, 320.0).toDouble();
 
-    return Align(
-      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        width: cardWidth,
-        margin: const EdgeInsets.only(bottom: 12),
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: theme.cardColor,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(16),
-            topRight: const Radius.circular(16),
-            bottomLeft: Radius.circular(isMe ? 16 : 0),
-            bottomRight: Radius.circular(isMe ? 0 : 16),
-          ),
-          border: Border.all(color: theme.dividerColor),
-          boxShadow: [
-            BoxShadow(
-              color: shadowColor(theme, theme.brightness == Brightness.dark),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
+    return GestureDetector(
+      onLongPress: () => _showMessageActions(message),
+      child: Align(
+        alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+        child: Container(
+          width: cardWidth,
+          margin: const EdgeInsets.only(bottom: 12),
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: theme.cardColor,
+            borderRadius: BorderRadius.only(
+              topLeft: const Radius.circular(16),
+              topRight: const Radius.circular(16),
+              bottomLeft: Radius.circular(isMe ? 16 : 0),
+              bottomRight: Radius.circular(isMe ? 0 : 16),
             ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  if (imageUrl.isNotEmpty)
-                    Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => _discountImageFallback(theme),
-                    )
-                  else
-                    _discountImageFallback(theme),
-                  if ((percent != null || (newNum != null && newNum > 0)) &&
-                      !expired)
-                    Positioned(
-                      top: 10,
-                      left: 10,
-                      child: Container(
+            border: Border.all(color: theme.dividerColor),
+            boxShadow: [
+              BoxShadow(
+                color: shadowColor(theme, theme.brightness == Brightness.dark),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AspectRatio(
+                aspectRatio: 16 / 9,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (imageUrl.isNotEmpty)
+                      Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) =>
+                            _discountImageFallback(theme),
+                      )
+                    else
+                      _discountImageFallback(theme),
+                    if ((percent != null || (newNum != null && newNum > 0)) &&
+                        !expired)
+                      Positioned(
+                        top: 10,
+                        left: 10,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(
+                              0xFFDC2626,
+                            ).withValues(alpha: 0.92),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.percent,
+                                size: 13,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                percent != null ? '$percent% OFF' : 'SALE',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    if (expired)
+                      Container(
+                        color: const Color(0xFF020617).withValues(alpha: 0.55),
+                        alignment: Alignment.center,
+                        child: const Text(
+                          'Offer Expired',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    if (hasPrice) ...[
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          if (oldNum != newNum) ...[
+                            Text(
+                              'SLE ${oldNum.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: theme.colorScheme.onSurfaceVariant,
+                                decoration: TextDecoration.lineThrough,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                          Text(
+                            'SLE ${newNum.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontSize: 19,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF16A34A),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    if (!expired) ...[
+                      Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 9,
-                          vertical: 4,
+                          horizontal: 8,
+                          vertical: 5,
                         ),
                         decoration: BoxDecoration(
                           color: const Color(
                             0xFFDC2626,
-                          ).withValues(alpha: 0.92),
-                          borderRadius: BorderRadius.circular(999),
+                          ).withValues(alpha: 0.07),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const Icon(
-                              Icons.percent,
+                              Icons.timer_outlined,
                               size: 13,
-                              color: Colors.white,
+                              color: Color(0xFFDC2626),
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              percent != null ? '$percent% OFF' : 'SALE',
+                              'Offer ends in ${_discountCountdown(createdAt)}',
                               style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFFDC2626),
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ),
-                  if (expired)
-                    Container(
-                      color: const Color(0xFF020617).withValues(alpha: 0.55),
-                      alignment: Alignment.center,
-                      child: const Text(
-                        'Offer Expired',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  if (hasPrice) ...[
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        if (oldNum != newNum) ...[
-                          Text(
-                            'SLE ${oldNum.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: theme.colorScheme.onSurfaceVariant,
-                              decoration: TextDecoration.lineThrough,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                        ],
-                        Text(
-                          'SLE ${newNum.toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            fontSize: 19,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF16A34A),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-                  if (!expired) ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFDC2626).withValues(alpha: 0.07),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+                      const SizedBox(height: 8),
+                    ],
+                    if (status == 'failed') ...[
+                      Row(
                         children: [
                           const Icon(
-                            Icons.timer_outlined,
-                            size: 13,
-                            color: Color(0xFFDC2626),
+                            Icons.error_outline,
+                            size: 16,
+                            color: Colors.redAccent,
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Offer ends in ${_discountCountdown(createdAt)}',
-                            style: const TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFFDC2626),
-                            ),
+                          TextButton(
+                            onPressed: isLocal
+                                ? () => _retrySend(message)
+                                : null,
+                            child: const Text('Retry'),
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-                  if (status == 'failed') ...[
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.error_outline,
-                          size: 16,
-                          color: Colors.redAccent,
-                        ),
-                        TextButton(
-                          onPressed: isLocal ? () => _retrySend(message) : null,
-                          child: const Text('Retry'),
-                        ),
-                      ],
-                    ),
-                  ] else if (!isMe)
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton.icon(
-                        onPressed: expired
-                            ? null
-                            : () {
-                                MarketCart().addItem(
-                                  MarketCartItem(
-                                    productId:
-                                        (message['product_id'] ?? '')
-                                            .toString()
-                                            .isNotEmpty
-                                        ? (message['product_id'] ?? '')
+                    ] else if (!isMe)
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: expired
+                              ? null
+                              : () {
+                                  MarketCart().addItem(
+                                    MarketCartItem(
+                                      productId:
+                                          (message['product_id'] ?? '')
                                               .toString()
-                                        : 'discount-${DateTime.now().millisecondsSinceEpoch}',
-                                    name: name.isNotEmpty
-                                        ? name
-                                        : 'Discount Offer',
-                                    price: newNum ?? oldNum ?? 0.0,
-                                    imageUrl: imageUrl,
-                                    shopId: (widget.thread['shop_id'] ?? '')
-                                        .toString(),
-                                    shopName: (widget.thread['shop_name'] ?? '')
-                                        .toString(),
-                                  ),
-                                );
-                                if (mounted) CartBottomSheet.show(context);
-                              },
-                        icon: const Icon(Icons.shopping_bag_outlined, size: 16),
-                        label: Text(
-                          expired ? 'Offer Expired' : 'Order This Item',
+                                              .isNotEmpty
+                                          ? (message['product_id'] ?? '')
+                                                .toString()
+                                          : 'discount-${DateTime.now().millisecondsSinceEpoch}',
+                                      name: name.isNotEmpty
+                                          ? name
+                                          : 'Discount Offer',
+                                      price: newNum ?? oldNum ?? 0.0,
+                                      imageUrl: imageUrl,
+                                      shopId: (widget.thread['shop_id'] ?? '')
+                                          .toString(),
+                                      shopName:
+                                          (widget.thread['shop_name'] ?? '')
+                                              .toString(),
+                                    ),
+                                  );
+                                  if (mounted) CartBottomSheet.show(context);
+                                },
+                          icon: const Icon(
+                            Icons.shopping_bag_outlined,
+                            size: 16,
+                          ),
+                          label: Text(
+                            expired ? 'Offer Expired' : 'Order This Item',
+                          ),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: _accentButtonColor(theme),
+                            padding: const EdgeInsets.symmetric(vertical: 11),
+                          ),
                         ),
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 11),
+                      )
+                    else
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 9),
+                        decoration: BoxDecoration(
+                          color: theme.scaffoldBackgroundColor,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.info_outline, size: 14),
+                            SizedBox(width: 6),
+                            Text(
+                              'Offer sent to buyer',
+                              style: TextStyle(fontSize: 12.5),
+                            ),
+                          ],
                         ),
                       ),
-                    )
-                  else
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 9),
-                      decoration: BoxDecoration(
-                        color: theme.scaffoldBackgroundColor,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.info_outline, size: 14),
-                          SizedBox(width: 6),
-                          Text(
-                            'Offer sent to buyer',
-                            style: TextStyle(fontSize: 12.5),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text(
+                          timeStr,
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        if (isLocal && status == 'sending') ...[
+                          const SizedBox(width: 6),
+                          const SizedBox(
+                            width: 12,
+                            height: 12,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ] else if (isMe) ...[
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.done_all,
+                            size: 14,
+                            color: theme.colorScheme.primary,
                           ),
                         ],
-                      ),
-                    ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Text(
-                        timeStr,
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      if (isLocal && status == 'sending') ...[
-                        const SizedBox(width: 6),
-                        const SizedBox(
-                          width: 12,
-                          height: 12,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      ] else if (isMe) ...[
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.done_all,
-                          size: 14,
-                          color: theme.colorScheme.primary,
-                        ),
                       ],
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -851,11 +954,13 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
           ),
           const SizedBox(width: 8),
           CircleAvatar(
-            backgroundColor: theme.colorScheme.primary,
+            backgroundColor: _accentButtonColor(theme),
             child: IconButton(
               icon: Icon(
                 Icons.send,
-                color: theme.colorScheme.onPrimary,
+                color: theme.brightness == Brightness.dark
+                    ? theme.colorScheme.onPrimary
+                    : Colors.white,
                 size: 20,
               ),
               onPressed: _sendMessage,

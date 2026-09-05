@@ -2,7 +2,6 @@ import 'package:first_flutter_project/components/cart/cart_bottom_sheet.dart';
 import 'package:first_flutter_project/global/market_cart.dart';
 import 'package:first_flutter_project/network/market_service.dart';
 import 'package:first_flutter_project/pages/market/billboard.dart';
-import 'package:first_flutter_project/pages/market/market_orders_screen.dart';
 import 'package:first_flutter_project/pages/market/market_product_card.dart';
 import 'package:first_flutter_project/pages/market/service_card.dart';
 import 'package:first_flutter_project/pages/market/services_more_screen.dart';
@@ -55,21 +54,6 @@ class _MarketScreenState extends State<MarketScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Market'),
-        actions: [
-          IconButton(
-            tooltip: 'My Orders',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const MarketOrdersScreen()),
-              );
-            },
-            icon: const Icon(Icons.receipt_long_outlined),
-          ),
-        ],
-      ),
       floatingActionButton: _buildCartFab(theme),
       body: RefreshIndicator(
         onRefresh: _fetchMarketData,

@@ -25,20 +25,20 @@ class _ChatKeyData {
   });
 
   Map<String, String> toJson() => {
-        'modulus': _bigIntToBase64(modulus),
-        'privateExponent': _bigIntToBase64(privateExponent),
-        'p': _bigIntToBase64(p),
-        'q': _bigIntToBase64(q),
-        'publicKeyPem': publicKeyPem,
-      };
+    'modulus': _bigIntToBase64(modulus),
+    'privateExponent': _bigIntToBase64(privateExponent),
+    'p': _bigIntToBase64(p),
+    'q': _bigIntToBase64(q),
+    'publicKeyPem': publicKeyPem,
+  };
 
   factory _ChatKeyData.fromJson(Map<String, dynamic> json) => _ChatKeyData(
-        modulus: _bigIntFromBase64(json['modulus'] as String),
-        privateExponent: _bigIntFromBase64(json['privateExponent'] as String),
-        p: _bigIntFromBase64(json['p'] as String),
-        q: _bigIntFromBase64(json['q'] as String),
-        publicKeyPem: json['publicKeyPem'] as String,
-      );
+    modulus: _bigIntFromBase64(json['modulus'] as String),
+    privateExponent: _bigIntFromBase64(json['privateExponent'] as String),
+    p: _bigIntFromBase64(json['p'] as String),
+    q: _bigIntFromBase64(json['q'] as String),
+    publicKeyPem: json['publicKeyPem'] as String,
+  );
 }
 
 String _bigIntToBase64(BigInt value) => base64Encode(_bigIntToBytes(value));
@@ -74,8 +74,11 @@ List<int> _derLength(int length) {
   return [0x80 | bytes.length, ...bytes];
 }
 
-List<int> _derElement(int tag, List<int> content) =>
-    [tag, ..._derLength(content.length), ...content];
+List<int> _derElement(int tag, List<int> content) => [
+  tag,
+  ..._derLength(content.length),
+  ...content,
+];
 
 List<int> _derInteger(BigInt value) {
   var bytes = _bigIntToBytes(value);
@@ -90,13 +93,25 @@ List<int> _rsaPublicKeyDer(BigInt modulus, BigInt exponent) =>
     _derElement(0x30, [..._derInteger(modulus), ..._derInteger(exponent)]);
 
 const List<int> _rsaEncryptionOid = [
-  0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01,
+  0x06,
+  0x09,
+  0x2a,
+  0x86,
+  0x48,
+  0x86,
+  0xf7,
+  0x0d,
+  0x01,
+  0x01,
+  0x01,
 ];
 
 List<int> _subjectPublicKeyInfoDer(BigInt modulus, BigInt exponent) {
   final algorithm = _derElement(0x30, [..._rsaEncryptionOid, 0x05, 0x00]);
-  final subjectPublicKey =
-      _derElement(0x03, [0x00, ..._rsaPublicKeyDer(modulus, exponent)]);
+  final subjectPublicKey = _derElement(0x03, [
+    0x00,
+    ..._rsaPublicKeyDer(modulus, exponent),
+  ]);
   return _derElement(0x30, [...algorithm, ...subjectPublicKey]);
 }
 
@@ -104,8 +119,7 @@ String _rsaPublicKeyPem(BigInt modulus, BigInt exponent) {
   final b64 = base64Encode(_subjectPublicKeyInfoDer(modulus, exponent));
   final buffer = StringBuffer('-----BEGIN PUBLIC KEY-----\n');
   for (var i = 0; i < b64.length; i += 64) {
-    buffer.writeln(
-        b64.substring(i, i + 64 > b64.length ? b64.length : i + 64));
+    buffer.writeln(b64.substring(i, i + 64 > b64.length ? b64.length : i + 64));
   }
   buffer.write('-----END PUBLIC KEY-----');
   return buffer.toString();
@@ -114,15 +128,18 @@ String _rsaPublicKeyPem(BigInt modulus, BigInt exponent) {
 Future<_ChatKeyData> _generateChatKeypair() {
   return Isolate.run(() {
     final rng = Random.secure();
-    final seed =
-        Uint8List.fromList(List<int>.generate(32, (_) => rng.nextInt(256)));
+    final seed = Uint8List.fromList(
+      List<int>.generate(32, (_) => rng.nextInt(256)),
+    );
     final random = FortunaRandom()..seed(KeyParameter(seed));
 
     final generator = KeyGenerator('RSA')
-      ..init(ParametersWithRandom(
-        RSAKeyGeneratorParameters(BigInt.from(65537), 2048, 12),
-        random,
-      ));
+      ..init(
+        ParametersWithRandom(
+          RSAKeyGeneratorParameters(BigInt.from(65537), 2048, 12),
+          random,
+        ),
+      );
 
     final pair = generator.generateKeyPair();
     final publicKey = pair.publicKey as RSAPublicKey;
@@ -202,8 +219,9 @@ class ChatService {
     final saved = await _storage.read(key: _kPrivateKey);
     if (saved != null && saved.isNotEmpty) {
       try {
-        final data =
-            _ChatKeyData.fromJson(jsonDecode(saved) as Map<String, dynamic>);
+        final data = _ChatKeyData.fromJson(
+          jsonDecode(saved) as Map<String, dynamic>,
+        );
         _keyData = data;
         return data;
       } catch (_) {
@@ -219,17 +237,23 @@ class ChatService {
   }
 
   Future<void> _registerKeyIfNeeded(
-      String participantKey, String publicKeyPem) async {
+    String participantKey,
+    String publicKeyPem,
+  ) async {
     final token = await TokenStorage.loadToken();
     final keyUrl = Uri.parse('$_base/api/v1/chat/keys/$participantKey');
     try {
-      final resp = await http.get(keyUrl, headers: SecreteData(token).getHeaders());
+      final resp = await http.get(
+        keyUrl,
+        headers: SecreteData(token).getHeaders(),
+      );
       if (resp.statusCode == 200) {
-        final existing = ((jsonDecode(resp.body) as Map<String, dynamic>)[
-            'public_key_pem'] ??
-            '')
-            .toString()
-            .trim();
+        final existing =
+            ((jsonDecode(resp.body)
+                        as Map<String, dynamic>)['public_key_pem'] ??
+                    '')
+                .toString()
+                .trim();
         if (existing == publicKeyPem.trim()) return;
       }
     } catch (_) {}
@@ -284,7 +308,10 @@ class ChatService {
   }
 
   Future<String> decryptPayload(
-      String threadKeyB64, String ciphertextB64, String ivB64) async {
+    String threadKeyB64,
+    String ciphertextB64,
+    String ivB64,
+  ) async {
     final ciphertext = base64Decode(ciphertextB64);
     if (ciphertext.length < 16) {
       throw Exception('Invalid ciphertext');
@@ -410,6 +437,25 @@ class ChatService {
     } catch (_) {}
   }
 
+  /// Deletes a message from a thread. Backend behaviour: the message is removed
+  /// for everyone and only the original sender is allowed to delete it.
+  Future<void> deleteMessage(String threadId, String messageId) async {
+    final token = await TokenStorage.loadToken();
+    if (token == null || token.isEmpty) {
+      throw Exception('Not authenticated');
+    }
+    final url = Uri.parse(
+      '$_base/api/v1/chat/threads/$threadId/messages/$messageId',
+    );
+    final response = await http.patch(
+      url,
+      headers: SecreteData(token).getHeaders(),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to delete message');
+    }
+  }
+
   Future<int> unreadCountFor(Map<String, dynamic> thread) async {
     var key = _participantKey;
     if (key == null || key.isEmpty) {
@@ -428,18 +474,20 @@ class ChatService {
       final saved = await _storage.read(key: _kLastMessagesCache);
       if (saved == null || saved.isEmpty) return {};
       final map = jsonDecode(saved) as Map<String, dynamic>;
-      return map.map((k, v) =>
-          MapEntry(k, Map<String, dynamic>.from(v as Map)));
+      return map.map(
+        (k, v) => MapEntry(k, Map<String, dynamic>.from(v as Map)),
+      );
     } catch (_) {
       return {};
     }
   }
 
   Future<void> saveLastMessage(
-      String threadId, Map<String, dynamic> preview) async {
+    String threadId,
+    Map<String, dynamic> preview,
+  ) async {
     final map = await loadLastMessages();
-    if (preview['text'] == null ||
-        (preview['text'] as String).trim().isEmpty) {
+    if (preview['text'] == null || (preview['text'] as String).trim().isEmpty) {
       map.remove(threadId);
     } else {
       map[threadId] = preview;
@@ -449,27 +497,27 @@ class ChatService {
     } catch (_) {}
   }
 
-  Future<void> saveLastMessages(
-      Map<String, Map<String, dynamic>> map) async {
+  Future<void> saveLastMessages(Map<String, Map<String, dynamic>> map) async {
     try {
       await _storage.write(key: _kLastMessagesCache, value: jsonEncode(map));
     } catch (_) {}
   }
 
   Future<Map<String, dynamic>?> fetchLastMessagePreview(
-      Map<String, dynamic> thread) async {
+    Map<String, dynamic> thread,
+  ) async {
     try {
       final threadKey = await resolveThreadKey(thread);
       final response = await getMessages(thread['id']);
-      final messages =
-          List<Map<String, dynamic>>.from(response['messages'] ?? []);
+      final messages = List<Map<String, dynamic>>.from(
+        response['messages'] ?? [],
+      );
       if (messages.isEmpty) return null;
       final last = messages.last;
       final ciphertext = last['ciphertext'] as String? ?? '';
       final iv = last['iv'] as String? ?? '';
       if (ciphertext.isEmpty) return null;
-      final text =
-          await decryptPayload(threadKey, ciphertext, iv);
+      final text = await decryptPayload(threadKey, ciphertext, iv);
       return {
         'text': text,
         'sent_at': last['sent_at'],
@@ -508,7 +556,8 @@ class ChatService {
   }
 
   Future<List<Map<String, dynamic>>> hydrateThreadsWithShopImages(
-      List<Map<String, dynamic>> threads) async {
+    List<Map<String, dynamic>> threads,
+  ) async {
     final images = await _loadShopImageMap();
     if (images.isEmpty) return threads;
     return threads.map((t) {
@@ -526,8 +575,11 @@ class ChatService {
   }
 
   Future<void> createThread(
-    String shopId, String shopName, String ownerKey,
-    {String shopImage = ''}) async {
+    String shopId,
+    String shopName,
+    String ownerKey, {
+    String shopImage = '',
+  }) async {
     await initChatEncryption();
     final token = await TokenStorage.loadToken();
     final url = Uri.parse('$_base/api/v1/chat/threads');

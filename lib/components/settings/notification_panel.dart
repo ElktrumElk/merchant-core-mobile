@@ -13,12 +13,15 @@ class NotificationPanel {
 
     showModalBottomSheet(
       showDragHandle: true,
+      isScrollControlled: true,
       context: context,
       builder: (ctx) {
         ValueNotifier<List> orders = ValueNotifier<List>(
           orderStore.orders.reversed.take(7).toList(),
         );
+        final sheetHeight = MediaQuery.of(ctx).size.height * 0.65;
         return Container(
+          height: sheetHeight,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: theme.cardColor,
@@ -29,6 +32,7 @@ class NotificationPanel {
             builder: (context, child) {
               return Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Row(
                     children: [
@@ -68,18 +72,31 @@ class NotificationPanel {
                     ),
                   ),
                   const SizedBox(height: 10),
-
-                  ...orders.value.map((order) {
-                    return _alertItem(
-                      bgColor,
-                      order.label.startsWith('Credit')
-                          ? Icons.credit_card
-                          : Icons.money_off,
-                      order.label,
-                      order.date.toString(),
-                      theme,
-                    );
-                  }),
+                  Expanded(
+                    child: orders.value.isEmpty
+                        ? Center(
+                            child: Text(
+                              'No recent alerts',
+                              style: TextStyle(color: Colors.grey.shade500),
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            itemCount: orders.value.length,
+                            itemBuilder: (context, index) {
+                              final order = orders.value[index];
+                              return _alertItem(
+                                bgColor,
+                                order.label.startsWith('Credit')
+                                    ? Icons.credit_card
+                                    : Icons.money_off,
+                                order.label,
+                                order.date.toString(),
+                                theme,
+                              );
+                            },
+                          ),
+                  ),
                 ],
               );
             },
