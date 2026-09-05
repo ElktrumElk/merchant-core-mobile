@@ -171,7 +171,7 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
               icon: const Icon(Icons.search),
             ),
 
-          if (_currentIndex != 2) ...[
+          if (_currentIndex != 1 && _currentIndex != 2) ...[
             ListenableBuilder(
               listenable: OrderStore(),
               builder: (context, _) {

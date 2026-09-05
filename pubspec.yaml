@@ -45,6 +45,7 @@ dependencies:
   cryptography: ^2.9.0
   pointycastle: ^3.9.1
   intl: ^0.20.3
+  video_player: ^2.9.2
 
 dev_dependencies:
   flutter_test:

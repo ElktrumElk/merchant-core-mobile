@@ -20,6 +20,7 @@ class _MarketScreenState extends State<MarketScreen> {
   List<Map<String, dynamic>> _shops = [];
   List<Map<String, dynamic>> _services = [];
   List<Map<String, dynamic>> _products = [];
+  List<Map<String, dynamic>> _adverts = [];
   bool _isLoading = true;
 
   @override
@@ -33,12 +34,17 @@ class _MarketScreenState extends State<MarketScreen> {
       final shops = await _marketService.getShops();
       final services = await _marketService.getServices(limit: 6);
       final products = await _marketService.getTopProducts(limit: 6);
+      List<Map<String, dynamic>> adverts = [];
+      try {
+        adverts = await _marketService.getAdverts();
+      } catch (_) {}
 
       if (mounted) {
         setState(() {
           _shops = shops;
           _services = services;
           _products = products;
+          _adverts = adverts;
           _isLoading = false;
         });
       }
@@ -59,7 +65,7 @@ class _MarketScreenState extends State<MarketScreen> {
         onRefresh: _fetchMarketData,
         child: ListView(
           children: [
-            const Billboard(),
+            Billboard(ads: _adverts),
 
             _buildSectionHeader('Featured Shops', onSeeAll: () {}),
             _buildHorizontalList(

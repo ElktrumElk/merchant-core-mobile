@@ -57,16 +57,18 @@ class MorePage extends StatelessWidget {
               Icons.credit_card_outlined,
             ),
           ),
-          _optionTile(
+_optionTile(
+          context,
+          icon: Icons.calculate_outlined,
+          title: 'Calculator',
+          subtitle: 'Quick business calculations',
+          onTap: () => _open(
             context,
-            icon: Icons.calculate_outlined,
-            title: 'Calculator',
-            subtitle: 'Quick business calculations',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const CalcPage()),
-            ),
+            const CalcPage(),
+            'Calculator',
+            Icons.calculate_outlined,
           ),
+        ),
 
           const Divider(height: 32),
 
