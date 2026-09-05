@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:first_flutter_project/network/market_service.dart';
@@ -17,12 +18,15 @@ class _BillboardState extends State<Billboard> {
   static const int _maxAds = 4;
   static const Duration _minDuration = Duration(seconds: 10);
   static const Duration _maxDuration = Duration(minutes: 1);
+  static const Duration _videoInitTimeout = Duration(seconds: 10);
+  static const Duration _disposeTimeout = Duration(seconds: 3);
+  static const Duration _watchdogTimeout = Duration(seconds: 25);
 
   final MarketService _marketService = MarketService();
   final PageController _pageController = PageController();
 
   List<Map<String, dynamic>> _adverts = [];
-  List<VideoPlayerController> _controllers = [];
+  List<VideoPlayerController?> _controllers = [];
   int _currentPage = 0;
   bool _isLoading = true;
   int _generation = 0;
@@ -64,62 +68,85 @@ class _BillboardState extends State<Billboard> {
 
   Future<void> _prepare(List<Map<String, dynamic>> source) async {
     final gen = ++_generation;
-    final shuffled = source
-        .where((a) =>
-            a['video_url'] is String &&
-            (a['video_url'] as String).isNotEmpty &&
-            a['active'] != false)
-        .toList()
-      ..shuffle(Random());
+    final watchdog = Timer(_watchdogTimeout, () {
+      if (mounted && gen == _generation) {
+        setState(() => _isLoading = false);
+      }
+    });
+    try {
+      final shuffled = source
+          .where((a) => a['video_url'] is String &&
+              (a['video_url'] as String).isNotEmpty)
+          .toList()
+        ..shuffle(Random());
 
-    final ads = <Map<String, dynamic>>[];
-    final controllers = <VideoPlayerController>[];
+      final ads = <Map<String, dynamic>>[];
+      final controllers = <VideoPlayerController?>[];
 
-    for (final ad in shuffled) {
-      if (ads.length >= _maxAds) break;
-      final controller =
-          VideoPlayerController.networkUrl(Uri.parse(ad['video_url']));
-      try {
-        await controller.initialize();
-        final duration = controller.value.duration;
-        if (duration >= _minDuration && duration <= _maxDuration) {
+      for (final ad in shuffled) {
+        if (ads.length >= _maxAds) break;
+        final videoUrl = ad['video_url'] as String;
+        final controller = VideoPlayerController.networkUrl(Uri.parse(videoUrl));
+        var usable = false;
+        try {
+          await controller.initialize().timeout(_videoInitTimeout);
+          final duration = controller.value.duration;
+          usable =
+              duration >= _minDuration && duration <= _maxDuration;
+        } catch (_) {}
+        if (usable) {
           ads.add(ad);
           controllers.add(controller);
-        } else {
-          await controller.dispose();
+          continue;
         }
-      } catch (_) {
-        try {
-          await controller.dispose();
-        } catch (_) {}
+        if (_isUsablePoster(ad)) {
+          ads.add(ad);
+          controllers.add(null);
+        }
+        _disposeQuietly(controller);
+      }
+
+      if (!mounted || gen != _generation) {
+        for (final c in controllers) {
+          _disposeQuietly(c);
+        }
+        return;
+      }
+
+      _disposeControllers();
+      setState(() {
+        _adverts = ads;
+        _controllers = controllers;
+        _isLoading = false;
+      });
+      _bindListeners();
+      _playCurrent();
+    } finally {
+      watchdog.cancel();
+      if (mounted && gen == _generation) {
+        setState(() => _isLoading = false);
       }
     }
-
-    if (!mounted || gen != _generation) {
-      for (final c in controllers) {
-        try {
-          await c.dispose();
-        } catch (_) {}
-      }
-      return;
-    }
-
-    _disposeControllers();
-    setState(() {
-      _adverts = ads;
-      _controllers = controllers;
-      _isLoading = false;
-    });
-    _bindListeners();
-    _playCurrent();
   }
 
   void _disposeControllers() {
     for (final c in _controllers) {
-      c.removeListener(_noop);
-      c.dispose();
+      c?.removeListener(_noop);
+      _disposeQuietly(c);
     }
     _controllers = [];
+  }
+
+  void _disposeQuietly(VideoPlayerController? controller) {
+    final future = controller?.dispose().timeout(_disposeTimeout);
+    if (future != null) {
+      unawaited(future.catchError((_) {}));
+    }
+  }
+
+  static bool _isUsablePoster(Map<String, dynamic> ad) {
+    final url = ad['advert_url'];
+    return url is String && url.isNotEmpty;
   }
 
   static void _noop() {}
@@ -127,6 +154,7 @@ class _BillboardState extends State<Billboard> {
   void _bindListeners() {
     for (var i = 0; i < _controllers.length; i++) {
       final controller = _controllers[i];
+      if (controller == null) continue;
       final index = i;
       controller.addListener(() {
         if (index != _currentPage) return;
@@ -140,16 +168,16 @@ class _BillboardState extends State<Billboard> {
   }
 
   void _playCurrent() {
-    if (_adverts.isEmpty || _controllers.isEmpty) return;
-    final controller = _controllers[_currentPage];
+    if (_adverts.isEmpty) return;
+    final controller = _controllers.elementAtOrNull(_currentPage);
+    if (controller == null) return;
     controller.seekTo(Duration.zero);
     controller.play();
   }
 
   void _advance() {
-    if (_controllers.isEmpty || _pageController.hasClients) {
-      if (_controllers.isEmpty) return;
-    }
+    if (_controllers.isEmpty) return;
+    if (!_pageController.hasClients) return;
     final next = (_currentPage + 1) % _controllers.length;
     _pageController.animateToPage(
       next,
@@ -161,7 +189,7 @@ class _BillboardState extends State<Billboard> {
   void _onPageChanged(int index) {
     for (var i = 0; i < _controllers.length; i++) {
       if (i == index) continue;
-      _controllers[i].pause();
+      _controllers[i]?.pause();
     }
     _currentPage = index;
     setState(() {});
@@ -171,19 +199,11 @@ class _BillboardState extends State<Billboard> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Container(
-        height: 180,
-        margin: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: const Center(child: CircularProgressIndicator()),
-      );
+      return _buildSkeleton(context);
     }
 
     if (_adverts.isEmpty) {
-      return const SizedBox.shrink();
+      return _buildPlaceholder(context);
     }
 
     return Padding(
@@ -210,9 +230,7 @@ class _BillboardState extends State<Billboard> {
                   width: i == _currentPage ? 18 : 6,
                   height: 6,
                   decoration: BoxDecoration(
-                    color: i == _currentPage
-                        ? Theme.of(context).colorScheme.primary
-                        : Colors.grey.shade400,
+                    color: Theme.of(context).colorScheme.primary,
                     borderRadius: BorderRadius.circular(3),
                   ),
                 ),
@@ -223,11 +241,80 @@ class _BillboardState extends State<Billboard> {
     );
   }
 
+  Widget _buildSkeleton(BuildContext context) {
+    return Container(
+      height: 200,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Theme.of(context).colorScheme.surfaceContainerHighest,
+            Theme.of(context).colorScheme.surface.withAlpha(120),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Center(
+        child: Text(
+          'Sponsored',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 1.2,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlaceholder(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      height: 140,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [scheme.primary, scheme.primary.withAlpha(150)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.storefront_outlined, color: Colors.white, size: 32),
+            SizedBox(height: 8),
+            Text(
+              'Featured Spotlight',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 4),
+            Text(
+              'Check back soon for new offers',
+              style: TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildPage(int index) {
     final ad = _adverts[index];
     final controller = _controllers[index];
-    final title = ad['title'] ?? 'Special Offer';
 
+    if (controller == null) {
+      return _buildPosterPage(ad);
+    }
+
+    final title = ad['title'] ?? 'Special Offer';
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       clipBehavior: Clip.antiAlias,
@@ -278,22 +365,7 @@ class _BillboardState extends State<Billboard> {
           Positioned(
             top: 12,
             left: 12,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.black.withAlpha(90),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                'AD · ${_formatDuration(controller.value.duration)}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
+            child: _Badge(text: 'AD · ${_formatDuration(controller.value.duration)}'),
           ),
           Positioned(
             left: 12,
@@ -357,10 +429,110 @@ class _BillboardState extends State<Billboard> {
     );
   }
 
+  Widget _buildPosterPage(Map<String, dynamic> ad) {
+    final posterUrl = ad['advert_url'] as String?;
+    final title = ad['title'] ?? 'Special Offer';
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(40),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (posterUrl != null)
+            Image.network(
+              posterUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (context, _, _) => Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Theme.of(context).colorScheme.primary,
+                      Theme.of(context).colorScheme.tertiary,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                colors: [
+                  Colors.black.withAlpha(170),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+          const Positioned(
+            top: 12,
+            left: 12,
+            child: _Badge(text: 'AD'),
+          ),
+          Positioned(
+            left: 12,
+            right: 12,
+            bottom: 14,
+            child: Text(
+              title,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _formatDuration(Duration duration) {
     if (duration.inSeconds <= 0) return 'Ad';
     final m = duration.inMinutes;
     final s = duration.inSeconds % 60;
     return m > 0 ? '$m:${s.toString().padLeft(2, '0')}' : '${s}s';
+  }
+}
+
+class _Badge extends StatelessWidget {
+  const _Badge({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.black.withAlpha(90),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
   }
 }
