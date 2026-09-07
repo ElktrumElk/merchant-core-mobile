@@ -1,6 +1,7 @@
 import 'package:first_flutter_project/components/cart/cart_bottom_sheet.dart';
 import 'package:first_flutter_project/global/market_cart.dart';
 import 'package:first_flutter_project/network/market_service.dart';
+import 'package:first_flutter_project/pages/market/all_shops_screen.dart';
 import 'package:first_flutter_project/pages/market/billboard.dart';
 import 'package:first_flutter_project/pages/market/market_product_card.dart';
 import 'package:first_flutter_project/pages/market/service_card.dart';
@@ -67,7 +68,17 @@ class _MarketScreenState extends State<MarketScreen> {
           children: [
             Billboard(ads: _adverts),
 
-            _buildSectionHeader('Featured Shops', onSeeAll: () {}),
+            _buildSectionHeader(
+              'Featured Shops',
+              onSeeAll: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AllShopsScreen(),
+                  ),
+                );
+              },
+            ),
             _buildHorizontalList(
               height: 140,
               itemCount: _shops.length,

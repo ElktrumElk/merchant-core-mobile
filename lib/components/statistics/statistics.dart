@@ -53,14 +53,17 @@ class Statistics extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
-              Text(
-                heroValue ?? value ?? '',
-                style: TextStyle(
-                  color: color ?? theme.colorScheme.primary,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w900,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  heroValue ?? value ?? '',
+                  style: TextStyle(
+                    color: color ?? theme.colorScheme.primary,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w900,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
               ),
               if (info != null && info!.isNotEmpty) ...[
                 const SizedBox(height: 8),
@@ -123,12 +126,16 @@ class Statistics extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           child ??
-              Text(
-                value as String,
-                style: TextStyle(
-                  color: color ?? theme.colorScheme.onSurface,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  value as String,
+                  style: TextStyle(
+                    color: color ?? theme.colorScheme.onSurface,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
           if (info != '') const SizedBox(height: 20),

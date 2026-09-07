@@ -6,6 +6,7 @@ import 'package:first_flutter_project/module/storage/device_storage.dart';
 import 'package:first_flutter_project/network/product_service.dart';
 import 'package:first_flutter_project/pages/stockpage/stock_statistics.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 
 // ============================================
 // Class that holds the list of product
@@ -114,6 +115,7 @@ class _StockPageState extends State<StockPage> {
   TextEditingController productCategory = TextEditingController();
   String typeEdit = 'add';
   String editItemId = '';
+  final Set<String> _dismissedIds = <String>{};
 
   List<Product> get items => StockGlobal.items;
 
@@ -139,6 +141,7 @@ class _StockPageState extends State<StockPage> {
     if (_searchQuery.isEmpty) return _filteredItems;
     return _filteredItems
         .where((x) => x.name.toLowerCase().contains(_searchQuery.toLowerCase()))
+        .where((x) => !_dismissedIds.contains(x.id))
         .toList();
   }
 
@@ -348,12 +351,22 @@ class _StockPageState extends State<StockPage> {
     }
   }
 
-  void _deleteItem(String id) async {
+  Future<bool> _deleteItem(String id) async {
     try {
       await ProductService().deleteProduct(id);
       await StockGlobal.loadItems();
+      return true;
     } catch (e) {
       debugPrint('Failed to delete product: $e');
+      return false;
+    }
+  }
+
+  Future<void> _dismissProduct(Product product) async {
+    setState(() => _dismissedIds.add(product.id));
+    final ok = await _deleteItem(product.id);
+    if (!ok && mounted) {
+      setState(() => _dismissedIds.remove(product.id));
     }
   }
 
@@ -452,31 +465,22 @@ class _StockPageState extends State<StockPage> {
                   physics: const NeverScrollableScrollPhysics(),
                   itemBuilder: (context, index) {
                     final product = _searchedItems[index];
-                    bool isLow = product.quantity >= 1 && product.quantity < 10;
-                    return Card(
-                      margin: const EdgeInsets.symmetric(
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
                         horizontal: 10,
                         vertical: 4,
                       ),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          child: Text(
-                            product.name.isNotEmpty ? product.name[0] : '?',
+                      child: Slidable(
+                        key: ValueKey(product.id),
+                        endActionPane: ActionPane(
+                          motion: const ScrollMotion(),
+                          dismissible: DismissiblePane(
+                            onDismissed: () => _dismissProduct(product),
                           ),
-                        ),
-                        title: Text(
-                          product.name,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Text(
-                          'Stock: ${product.quantity} | Price: SLE ${product.price.toStringAsFixed(2)}',
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
+                          extentRatio: 0.45,
                           children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit_outlined),
-                              onPressed: () {
+                            SlidableAction(
+                              onPressed: (_) {
                                 typeEdit = 'edit';
                                 editItemId = product.id;
                                 productName.text = product.name;
@@ -487,15 +491,50 @@ class _StockPageState extends State<StockPage> {
                                 productCategory.text = product.category;
                                 _showAddModal(context);
                               },
-                            ),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.delete_outline,
-                                color: Colors.red,
+                              backgroundColor: Colors.blue.shade600,
+                              foregroundColor: Colors.white,
+                              icon: Icons.edit_outlined,
+                              label: 'Edit',
+                              borderRadius: const BorderRadius.horizontal(
+                                left: Radius.circular(12),
                               ),
-                              onPressed: () => _deleteItem(product.id),
+                            ),
+                            SlidableAction(
+                              onPressed: (_) => _dismissProduct(product),
+                              backgroundColor: Colors.red.shade600,
+                              foregroundColor: Colors.white,
+                              icon: Icons.delete_outline,
+                              label: 'Delete',
+                              borderRadius: const BorderRadius.horizontal(
+                                right: Radius.circular(12),
+                              ),
                             ),
                           ],
+                        ),
+                        child: Card(
+                          margin: EdgeInsets.zero,
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              child: Text(
+                                product.name.isNotEmpty
+                                    ? product.name[0]
+                                    : '?',
+                              ),
+                            ),
+                            title: Text(
+                              product.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            subtitle: Text(
+                              'Stock: ${product.quantity} | Price: SLE ${product.price.toStringAsFixed(2)}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                         ),
                       ),
                     );
@@ -508,3 +547,4 @@ class _StockPageState extends State<StockPage> {
     );
   }
 }
+
