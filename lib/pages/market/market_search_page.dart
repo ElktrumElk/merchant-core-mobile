@@ -46,13 +46,49 @@ class _MarketSearchPageState extends State<MarketSearchPage> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        titleSpacing: 0,
+        automaticallyImplyLeading: false,
+        toolbarHeight: 52,
+        titleSpacing: 8,
         title: TextField(
           controller: _searchCtrl,
           autofocus: true,
-          decoration: const InputDecoration(
+          textInputAction: TextInputAction.search,
+          decoration: InputDecoration(
             hintText: 'Search products or services...',
-            border: InputBorder.none,
+            hintStyle: const TextStyle(fontSize: 14),
+            prefixIcon: const Icon(Icons.search, size: 20),
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.close, size: 20),
+              tooltip: 'Close',
+              onPressed: () => Navigator.pop(context),
+            ),
+            suffixIconConstraints: const BoxConstraints(
+              minWidth: 36,
+              minHeight: 36,
+            ),
+            prefixIconConstraints: const BoxConstraints(
+              minWidth: 36,
+              minHeight: 36,
+            ),
+            isDense: true,
+            filled: true,
+            fillColor: theme.colorScheme.surfaceContainerHighest.withAlpha(120),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 6,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(24),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(24),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(24),
+              borderSide: BorderSide.none,
+            ),
           ),
           onChanged: _onSearch,
         ),

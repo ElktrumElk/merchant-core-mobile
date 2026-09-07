@@ -7,18 +7,26 @@ class CartBottomSheet extends StatefulWidget {
   const CartBottomSheet({super.key});
 
   static Future<void> show(BuildContext context) {
-    return showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      enableDrag: true,
-      showDragHandle: true,
-      backgroundColor: Theme.of(context).cardColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => const FractionallySizedBox(
-        heightFactor: 0.75,
-        child: CartBottomSheet(),
+    return Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: true,
+        transitionDuration: const Duration(milliseconds: 320),
+        reverseTransitionDuration: const Duration(milliseconds: 260),
+        pageBuilder: (_, _, _) => const CartBottomSheet(),
+        transitionsBuilder: (_, animation, _, child) {
+          final curved = CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+            reverseCurve: Curves.easeInCubic,
+          );
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 1),
+              end: Offset.zero,
+            ).animate(curved),
+            child: child,
+          );
+        },
       ),
     );
   }
@@ -189,13 +197,45 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
     return ListenableBuilder(
       listenable: _cart,
       builder: (context, _) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
+        return Scaffold(
+          resizeToAvoidBottomInset: true,
+          appBar: AppBar(
+            leading: IconButton(
+              icon: const Icon(Icons.close),
+              tooltip: 'Close',
+              onPressed: () => Navigator.pop(context),
+            ),
+            titleSpacing: 0,
+            title: Row(
+              children: [
+                const Text(
+                  'Your Cart',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withAlpha(20),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '${_cart.totalItemCount} item(s)',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              if (!_cart.isEmpty)
+                TextButton(onPressed: _cart.clear, child: const Text('Clear')),
+            ],
           ),
-          child: Column(
+          body: Column(
             children: [
-              _buildHeader(theme),
               Expanded(
                 child: _cart.isEmpty
                     ? _buildEmptyState(theme)
@@ -212,41 +252,6 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildHeader(ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 8, 8),
-      child: Row(
-        children: [
-          Icon(Icons.shopping_cart_outlined, color: theme.colorScheme.primary),
-          const SizedBox(width: 8),
-          Text(
-            'Your Cart',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withAlpha(20),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              '${_cart.totalItemCount} item(s)',
-              style: TextStyle(fontSize: 12, color: theme.colorScheme.primary),
-            ),
-          ),
-          const Spacer(),
-          if (!_cart.isEmpty)
-            TextButton(onPressed: _cart.clear, child: const Text('Clear')),
-        ],
-      ),
     );
   }
 
@@ -440,6 +445,7 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
             TextFormField(
               controller: _nameCtrl,
               textCapitalization: TextCapitalization.words,
+              scrollPadding: const EdgeInsets.all(24),
               decoration: _inputDecoration(
                 theme,
                 'Full name',
@@ -453,6 +459,7 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
             TextFormField(
               controller: _phoneCtrl,
               keyboardType: TextInputType.phone,
+              scrollPadding: const EdgeInsets.all(24),
               decoration: _inputDecoration(
                 theme,
                 'Phone number',
@@ -466,6 +473,7 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
             TextFormField(
               controller: _addressCtrl,
               textCapitalization: TextCapitalization.sentences,
+              scrollPadding: const EdgeInsets.all(24),
               decoration: _inputDecoration(
                 theme,
                 'Delivery address',
@@ -480,6 +488,7 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
             TextFormField(
               controller: _emailCtrl,
               keyboardType: TextInputType.emailAddress,
+              scrollPadding: const EdgeInsets.all(24),
               decoration: _inputDecoration(
                 theme,
                 'Email (optional)',

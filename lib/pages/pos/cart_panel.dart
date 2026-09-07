@@ -259,7 +259,7 @@ class _CartPanelState extends State<CartPanel> {
                           width: 50,
                           height: 50,
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade100,
+                            color: isDark ? theme.cardColor : Colors.grey.shade100,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Icon(Icons.image, color: theme.colorScheme.onSurface.withAlpha(100)),

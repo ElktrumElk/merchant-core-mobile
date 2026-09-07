@@ -336,6 +336,8 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
                   children: [
                     Text(
                       widget.thread['shop_name'] ?? 'Official Store',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -594,7 +596,9 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
     } catch (_) {}
 
     final screenWidth = MediaQuery.of(context).size.width;
-    final cardWidth = (screenWidth * 0.78).clamp(240.0, 320.0).toDouble();
+    final available = screenWidth - 32.0;
+    final cardWidth =
+        (available * 0.9).clamp(0.0, 320.0).toDouble();
 
     return GestureDetector(
       onLongPress: () => _showMessageActions(message),
@@ -708,30 +712,35 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
                     ),
                     const SizedBox(height: 4),
                     if (hasPrice) ...[
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        children: [
-                          if (oldNum != newNum) ...[
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            if (oldNum != newNum) ...[
+                              Text(
+                                'SLE ${oldNum.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  decoration: TextDecoration.lineThrough,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
                             Text(
-                              'SLE ${oldNum.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: theme.colorScheme.onSurfaceVariant,
-                                decoration: TextDecoration.lineThrough,
+                              'SLE ${newNum.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontSize: 19,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF16A34A),
                               ),
                             ),
-                            const SizedBox(width: 8),
                           ],
-                          Text(
-                            'SLE ${newNum.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              fontSize: 19,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF16A34A),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                       const SizedBox(height: 8),
                     ],

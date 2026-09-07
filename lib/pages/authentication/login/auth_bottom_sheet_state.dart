@@ -47,7 +47,7 @@ class AuthBottomSheetState extends State<AuthBottomSheet>
               _buildTabBar(theme),
               const SizedBox(height: 8),
               SizedBox(
-                height: _tabController.length == 2 ? 420 : 420,
+                height: 420,
                 child: TabBarView(
                   controller: _tabController,
                   children: [
@@ -120,7 +120,7 @@ class AuthBottomSheetState extends State<AuthBottomSheet>
           borderRadius: BorderRadius.circular(12),
         ),
         indicatorSize: TabBarIndicatorSize.tab,
-        labelColor: Color(0xFF4793FF),
+        labelColor: const Color(0xFF4793FF),
         unselectedLabelColor: Colors.grey,
         labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
         dividerColor: Colors.transparent,

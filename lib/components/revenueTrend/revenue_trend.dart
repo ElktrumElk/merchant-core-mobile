@@ -27,8 +27,13 @@ class RevenueTrend extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Revenue Trend',
-                  style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)),
+              Flexible(
+                child: Text('Revenue Trend',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)),
+              ),
+              const SizedBox(width: 8),
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 10),

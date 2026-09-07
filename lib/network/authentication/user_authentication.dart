@@ -13,7 +13,7 @@ class SecreteData {
   const SecreteData([this.apiToken]);
 
   static const String authUrl = kDebugMode
-      ? 'http://10.0.2.2:8000'
+      ? 'http://172.20.10.3:8000'
       : 'https://merchantcore-api.onrender.com';
   static const String authLoginEndpoint = '/api/v1/auth/login';
   static const String authSignupEndpoint = '/api/v1/auth/register';

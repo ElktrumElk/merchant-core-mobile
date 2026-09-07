@@ -1,3 +1,4 @@
+import 'package:first_flutter_project/components/toast/toast.dart';
 import 'package:first_flutter_project/global/market_cart.dart';
 import 'package:first_flutter_project/network/chat_service.dart';
 import 'package:first_flutter_project/network/market_service.dart';
@@ -210,12 +211,18 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
                           ],
                         ),
                       ),
-                      Text(
-                        'SLE ${_product['price']}',
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green,
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            'SLE ${_product['price']}',
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green,
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -399,16 +406,22 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
                   }
                 },
                 icon: const Icon(Icons.storefront),
-                label: const Text('Visit Shop'),
+                label: const Flexible(
+                  child: Text(
+                    'Visit Shop',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             Expanded(
               child: FilledButton.icon(
                 onPressed: () {
@@ -423,17 +436,20 @@ class _ProductInfoScreenState extends State<ProductInfoScreen> {
                       shopName: _product['shop_name']?.toString() ?? 'Shop',
                     ),
                   );
-                  ScaffoldMessenger.of(context)
-                    ..hideCurrentSnackBar()
-                    ..showSnackBar(
-                      const SnackBar(content: Text('Added to cart!')),
-                    );
+                  AppToast.show(context, message: 'Added to cart!');
                 },
                 icon: const Icon(Icons.shopping_cart),
-                label: const Text('Add to Cart'),
+                label: const Flexible(
+                  child: Text(
+                    'Add to Cart',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
                 style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                  backgroundColor: theme.colorScheme.onSurface,
+                  foregroundColor: theme.colorScheme.surface,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),

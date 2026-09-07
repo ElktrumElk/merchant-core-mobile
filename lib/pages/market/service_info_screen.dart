@@ -76,9 +76,15 @@ class _ServiceInfoScreenState extends State<ServiceInfoScreen> {
                           style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                         ),
                       ),
-                      Text(
-                        'SLE ${_service['price']}',
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blue),
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            'SLE ${_service['price']}',
+                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blue),
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -144,22 +150,34 @@ class _ServiceInfoScreenState extends State<ServiceInfoScreen> {
                   }
                 },
                 icon: const Icon(Icons.storefront),
-                label: const Text('Visit Shop'),
+                label: const Flexible(
+                  child: Text(
+                    'Visit Shop',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
                 ),
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
              Expanded(
               child: FilledButton.icon(
                 onPressed: () {
                   // Request service logic
                 },
                 icon: const Icon(Icons.mail_outline),
-                label: const Text('Request Service'),
+                label: const Flexible(
+                  child: Text(
+                    'Request Service',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
                 style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
                   backgroundColor: Colors.blue,
                 ),
               ),

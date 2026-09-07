@@ -9,9 +9,12 @@ import 'package:first_flutter_project/global/sales_global.dart';
 import 'package:first_flutter_project/global/stock/stock_global.dart';
 import 'package:first_flutter_project/network/transaction_service.dart';
 //import 'package:first_flutter_project/pages/stockpage/stock_page.dart';
+import 'package:first_flutter_project/components/popups/seller_ad_popup.dart';
 import 'package:flutter/material.dart';
 
 export './home_page.dart';
+
+bool _hasShownSellerAd = false;
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -43,6 +46,13 @@ class _MyHomePageState extends State<MyHomePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _creditStore.loadSampleData();
       _orderStore.fetchOrders();
+      
+      if (!_hasShownSellerAd) {
+        _hasShownSellerAd = true;
+        Future.delayed(const Duration(seconds: 1), () {
+          if (mounted) SellerAdPopup.show(context);
+        });
+      }
     });
     _loadItems();
     _startPolling();
@@ -146,6 +156,8 @@ class _MyHomePageState extends State<MyHomePage> {
                   children: [
                     Text(
                       order.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
@@ -162,12 +174,19 @@ class _MyHomePageState extends State<MyHomePage> {
                   ],
                 ),
               ),
-              Text(
-                'SLE ${order.total.toStringAsFixed(2)}',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  color: theme.colorScheme.onSurface,
+              const SizedBox(width: 8),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    'SLE ${order.total.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -258,11 +277,15 @@ class _MyHomePageState extends State<MyHomePage> {
                 color: alert['color'] as Color,
               ),
               const SizedBox(width: 10),
-              Text(
-                alert['message'] as String,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: theme.colorScheme.onSurface,
+              Expanded(
+                child: Text(
+                  alert['message'] as String,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: theme.colorScheme.onSurface,
+                  ),
                 ),
               ),
             ],

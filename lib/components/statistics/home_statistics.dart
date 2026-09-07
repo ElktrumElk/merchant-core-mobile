@@ -26,6 +26,7 @@ class _HomeStatisticsState extends State<HomeStatistics> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final screenWidth = MediaQuery.of(context).size.width;
 
     return ListenableBuilder(
       listenable: Listenable.merge([_orderStore, _creditStore, StockGlobal()]),
@@ -36,11 +37,11 @@ class _HomeStatisticsState extends State<HomeStatistics> {
         final creditOutstanding = _creditStore.totalOutstanding;
 
         return Container(
-          padding: const EdgeInsets.all(16.0),
+          padding: EdgeInsets.all(screenWidth < 360 ? 10 : 16.0),
           child: Column(
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: _buildStatCard(
@@ -69,7 +70,7 @@ class _HomeStatisticsState extends State<HomeStatistics> {
               ),
               const SizedBox(height: 20),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: _buildStatCard(
@@ -113,9 +114,21 @@ class _HomeStatisticsState extends State<HomeStatistics> {
     String iconUrl = ''
   }) {
     final theme = Theme.of(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmall = screenWidth < 370;
+    final isVerySmall = screenWidth < 340;
+
+    final titleFont = isVerySmall ? 9.0 : (isSmall ? 10.0 : 12.0);
+    final valueFont = isVerySmall ? 13.0 : (isSmall ? 15.0 : 18.0);
+    final infoFont = isVerySmall ? 9.0 : (isSmall ? 10.0 : 12.0);
+    final iconSize = isSmall ? 16.0 : 20.0;
+
     return Container(
-      width: 150.0,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+        horizontal: isVerySmall ? 6 : 12,
+        vertical: isVerySmall ? 10 : 16,
+      ),
       decoration: BoxDecoration(
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(15),
@@ -136,37 +149,48 @@ class _HomeStatisticsState extends State<HomeStatistics> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                title,
-                style: TextStyle(
-                  color: theme.colorScheme.onSurface.withAlpha(180),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
+              Flexible(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface.withAlpha(180),
+                    fontSize: titleFont,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
+              const SizedBox(width: 4),
               Image.asset(
                 iconUrl,
-                width: 20,
-                height: 20,
+                width: iconSize,
+                height: iconSize,
                 color: iconColor,
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
+          SizedBox(height: isVerySmall ? 10 : 20),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: TextStyle(
+                color: color,
+                fontSize: valueFont,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: isVerySmall ? 8 : 20),
           Text(
             info,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: infoColor,
-              fontSize: 12,
+              fontSize: infoFont,
               fontWeight: FontWeight.w600,
             ),
           ),

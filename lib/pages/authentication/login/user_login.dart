@@ -1,4 +1,3 @@
-import 'package:first_flutter_project/network/authentication/user_authentication.dart';
 import 'package:first_flutter_project/pages/authentication/login/auth_bottom_sheet_state.dart';
 import 'package:first_flutter_project/pages/authentication/login/login_form.dart';
 import 'package:first_flutter_project/pages/authentication/login/sign_up.dart';
@@ -31,7 +30,6 @@ class LoginForm extends StatefulWidget {
 }
 
 // SIGNUP FORM
-
 class SignupForm extends StatefulWidget {
   final VoidCallback onSuccess;
 
@@ -40,4 +38,3 @@ class SignupForm extends StatefulWidget {
   @override
   State<SignupForm> createState() => SignupFormState();
 }
-

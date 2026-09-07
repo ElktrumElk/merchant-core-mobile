@@ -1,3 +1,4 @@
+import 'package:first_flutter_project/components/toast/toast.dart';
 import 'package:first_flutter_project/global/market_cart.dart';
 import 'package:first_flutter_project/pages/market/product_info_screen.dart';
 import 'package:flutter/material.dart';
@@ -8,11 +9,11 @@ class MarketProductCard extends StatelessWidget {
 
   void _addToCart(BuildContext context) {
     if (product['in_stock'] == false) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(content: Text('This product is out of stock')),
-        );
+      AppToast.show(
+        context,
+        message: 'This product is out of stock',
+        isError: true,
+      );
       return;
     }
     MarketCart().addItem(
@@ -26,9 +27,7 @@ class MarketProductCard extends StatelessWidget {
         shopName: product['shop_name']?.toString() ?? 'Shop',
       ),
     );
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(const SnackBar(content: Text('Added to cart')));
+    AppToast.show(context, message: 'Added to cart');
   }
 
   @override
@@ -120,13 +119,20 @@ class MarketProductCard extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'SLE ${product['price'] ?? '0.00'}',
-                        style: const TextStyle(
-                          color: Colors.green,
-                          fontWeight: FontWeight.bold,
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'SLE ${product['price'] ?? '0.00'}',
+                            style: const TextStyle(
+                              color: Colors.green,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ),
+                      const SizedBox(width: 6),
                       GestureDetector(
                         onTap: () => _addToCart(context),
                         child: Container(

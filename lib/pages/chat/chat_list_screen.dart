@@ -315,6 +315,8 @@ class ChatListScreenState extends State<ChatListScreen> {
       ),
       title: Text(
         thread['shop_name'] ?? 'Official Store',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(
           fontWeight: FontWeight.bold,
           fontSize: 16,

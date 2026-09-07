@@ -69,7 +69,7 @@ class _MarketScreenState extends State<MarketScreen> {
 
             _buildSectionHeader('Featured Shops', onSeeAll: () {}),
             _buildHorizontalList(
-              height: 180,
+              height: 140,
               itemCount: _shops.length,
               itemBuilder: (context, index) => ShopCard(shop: _shops[index]),
             ),
@@ -140,8 +140,8 @@ class _MarketScreenState extends State<MarketScreen> {
         if (cart.isEmpty) return const SizedBox.shrink();
         return FloatingActionButton.extended(
           onPressed: () => CartBottomSheet.show(context),
-          backgroundColor: Colors.black,
-          foregroundColor: Colors.white,
+          backgroundColor: theme.colorScheme.onSurface,
+          foregroundColor: theme.colorScheme.surface,
           elevation: 4,
           icon: Badge(
             label: Text('${cart.totalItemCount}'),
@@ -160,10 +160,15 @@ class _MarketScreenState extends State<MarketScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            title,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          Flexible(
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
           ),
+          const SizedBox(width: 8),
           TextButton(onPressed: onSeeAll, child: const Text('View All')),
         ],
       ),

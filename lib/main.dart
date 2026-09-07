@@ -31,17 +31,18 @@ class MyApp extends StatelessWidget {
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: themeNotifier,
       builder: (context, themeMode, _) {
-        return MaterialApp(
-          theme: AppTheme.lightTheme,
-          darkTheme: AppTheme.darkTheme,
-          themeMode: themeMode,
-          debugShowCheckedModeBanner: false,
-          home: ValueListenableBuilder<bool>(
-            valueListenable: isSplashScreen,
-            builder: (context, isSplash, _) {
-              return isSplash ? const SplashScreen() : const MainLayoutShell();
-            },
-          ),
+        return ValueListenableBuilder<bool>(
+          valueListenable: isSplashScreen,
+          builder: (context, isSplash, _) {
+            return MaterialApp(
+              key: ValueKey(isSplash), // Forces full reset of Navigator on login/logout
+              theme: AppTheme.lightTheme,
+              darkTheme: AppTheme.darkTheme,
+              themeMode: themeMode,
+              debugShowCheckedModeBanner: false,
+              home: isSplash ? const SplashScreen() : const MainLayoutShell(),
+            );
+          },
         );
       },
     );
